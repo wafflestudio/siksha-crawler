@@ -11,6 +11,9 @@
     1. sudo npm install -g serverless
     1. serverless config credentials --overwrite --provider aws --key <키 정보 입력> --secret <시크릿 키 정보 입력>
     1. serverless.yml 의 dockerizePip 설정을 주석을 참고하여 운영체제에 맞게 변경
+    1. export SLS_DEBUG=*
+    1. npm init -y
+    1. npm install --save serverless-python-requirements
 1. deploy
     * serverless deploy
 1. test
