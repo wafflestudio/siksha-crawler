@@ -7,7 +7,8 @@
 ## Deploy & Test([참고자료](https://www.serverless.com/blog/serverless-python-packaging/))
 1. setting
     1. docker 설치 & 실행
-    1. aws cli 설치
+    1. aws cli 설치 & configure 설정
+    1. node & npm 설치([반드시 node 버전 14 이하로 유지](https://github.com/serverless/serverless/issues/8794))
     1. sudo npm install -g serverless
     1. serverless config credentials --overwrite --provider aws --key <키 정보 입력> --secret <시크릿 키 정보 입력>
     1. serverless.yml 의 dockerizePip 설정을 주석을 참고하여 운영체제에 맞게 변경
