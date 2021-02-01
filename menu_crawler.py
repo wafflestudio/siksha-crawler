@@ -21,26 +21,19 @@ class Meal:
     type_handler = {BR: BR, LU: LU, DN: DN, '아침': BR, '점심': LU, '저녁': DN, '중식': LU, '석식': DN}
     not_meal = ['휴무', '휴점', '폐점', '제공']
 
-    def __init__(self, type='', meal_name='', restaurant='', restaurant_detail=None, date=None, price=-1, etc=None):
-        self.set_type(type)
-        self.set_meal_name(meal_name)
-        self.set_restaurant(restaurant)
-        self.set_restaurant_detail(restaurant_detail)
+    def __init__(self, restaurant_code='', code='', date=None, type='', price=-1, etc=None):
+        self.set_restaurant_code(restaurant_code)
+        self.set_code(code)
         self.set_date(date)
+        self.set_type(type)
         self.set_price(price)
         self.set_etc(etc)
 
-    def set_type(self, type):
-        self.type = self.type_handler.get(text_normalizer(type, True))
+    def set_restaurant_code(self, restaurant_code):
+        self.restaurant_code = text_normalizer(restaurant_code)
 
-    def set_meal_name(self, meal_name):
-        self.meal_name = text_normalizer(meal_name)
-
-    def set_restaurant(self, restaurant):
-        self.restaurant = text_normalizer(restaurant)
-
-    def set_restaurant_detail(self, restaurant_detail):
-        self.restaurant_detail = restaurant_detail if restaurant_detail else []
+    def set_code(self, code):
+        self.code = text_normalizer(code)
 
     def set_date(self, date):
         if isinstance(date, datetime.date):
@@ -51,6 +44,9 @@ class Meal:
             month = int(nums[0])
             day = int(nums[1])
             self.date = datetime.date(year, month, day)
+
+    def set_type(self, type):
+        self.type = self.type_handler.get(text_normalizer(type, True))
 
     def set_price(self, price):
         if isinstance(price, int):
@@ -75,10 +71,17 @@ class Meal:
         return True
 
     def __str__(self):
-        restaurant_name = self.restaurant
-        if self.restaurant_detail:
-            restaurant_name = restaurant_name + '(' + '>'.join(self.restaurant_detail) + ')'
-        return f"{self.type}> {self.meal_name} | {restaurant_name} | {self.date.isoformat()} | {self.price} | {repr(', '.join(self.etc))}"
+        return f"{self.type}> {self.code} | {self.restaurant_code} | {self.date.isoformat()} | {self.price} | {repr(', '.join(self.etc))}"
+
+    def as_dict(self):
+        return dict(
+            restaurant_code=self.restaurant_code,
+            code=self.code,
+            date=self.date,
+            type=self.type,
+            price=self.price,
+            etc=self.etc
+        )
 
 
 class MealNormalizer(metaclass=ABCMeta):
