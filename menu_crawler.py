@@ -64,12 +64,12 @@ class Meal:
         self.etc = etc if etc else []
 
     @classmethod
-    def is_meal_name(cls, meal_name):
-        meal_name = text_normalizer(meal_name, True)
-        if not meal_name:
+    def is_meal_code(cls, code):
+        code = text_normalizer(code, True)
+        if not code:
             return False
         for str in cls.not_meal:
-            if str in meal_name:
+            if str in code:
                 return False
         return True
 
@@ -103,10 +103,10 @@ class FindPrice(MealNormalizer):
         return meal
 
 
-#class RemoveRestaurantNumber(MealNormalizer):
-#    def normalize(self, meal, **kwargs):
-#        meal.set_restaurant(re.sub(r'\(\d{3}-\d{4}\)', '', meal.restaurant))
-#        return meal
+class RemoveRestaurantNumber(MealNormalizer):
+    def normalize(self, meal, **kwargs):
+        meal.set_restaurant(re.sub(r'\(\d{3}-\d{4}\)', '', meal.restaurant))
+        return meal
 
 
 class RemoveInfoFromMealName(MealNormalizer):
@@ -141,6 +141,11 @@ class RestaurantCrawler(metaclass=ABCMeta):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0'}
     url = ''
     normalizer_classes = []
+    meals = []
+
+    @abstractmethod
+    def run_30days(self):
+        pass
 
     def run(self, url=None):
         urllib3.disable_warnings()
@@ -149,6 +154,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
         page = requests.get(url, headers=self.headers, timeout=35, verify=False)
         soup = BeautifulSoup(page.content, 'html.parser')
         self.crawl(soup)
+        return self.meals
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
@@ -156,8 +162,12 @@ class RestaurantCrawler(metaclass=ABCMeta):
         return meal
 
     def print_meal(self, meal):
-        if Meal.is_meal_name(meal.meal_name):
+        if Meal.is_meal_code(meal.code):
             print(meal)
+
+    def meal_found(self, meal):
+        if Meal.is_meal_code(meal.code):
+            self.meals.append(meal)
 
     @abstractmethod
     def crawl(self, soup):
