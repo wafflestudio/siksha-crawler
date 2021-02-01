@@ -35,7 +35,10 @@ class Meal:
     def set_code(self, code):
         self.code = text_normalizer(code)
 
-    def set_date(self, date):
+    def set_date(self, date=None):
+        if not date:
+            now = datetime.datetime.now(timezone('Asia/Seoul'))
+            date = datetime.date.fromtimestamp(now.timestamp())
         if isinstance(date, datetime.date):
             self.date = date
         else:
@@ -93,30 +96,30 @@ class MealNormalizer(metaclass=ABCMeta):
 class FindPrice(MealNormalizer):
     def normalize(self, meal, **kwargs):
         p = re.compile(r'[1-9]\d{0,2},?\d00원?')
-        m = p.search(meal.meal_name)
+        m = p.search(meal.code)
         if m:
             meal.set_price(m.group())
-            meal.set_meal_name(p.sub('', meal.meal_name))
+            meal.set_code(p.sub('', meal.code))
         return meal
 
 
-class RemoveRestaurantNumber(MealNormalizer):
-    def normalize(self, meal, **kwargs):
-        meal.set_restaurant(re.sub(r'\(\d{3}-\d{4}\)', '', meal.restaurant))
-        return meal
+#class RemoveRestaurantNumber(MealNormalizer):
+#    def normalize(self, meal, **kwargs):
+#        meal.set_restaurant(re.sub(r'\(\d{3}-\d{4}\)', '', meal.restaurant))
+#        return meal
 
 
 class RemoveInfoFromMealName(MealNormalizer):
     info_sign = ['※', '►', '※']
     def normalize(self, meal, **kwargs):
-        meal.set_meal_name(re.sub('(' + '|'.join(self.info_sign) + ').*', '', meal.meal_name))
+        meal.set_code(re.sub('(' + '|'.join(self.info_sign) + ').*', '', meal.code))
         return meal
 
 
 class FindParenthesisHash(MealNormalizer):
     def normalize(self, meal, **kwargs):
-        if '(#)' in meal.meal_name:
-            meal.set_meal_name(meal.meal_name.replace('(#)', ''))
+        if '(#)' in meal.code:
+            meal.set_code(meal.code.replace('(#)', ''))
             meal.etc.append("No meat")
         return meal
 
@@ -129,7 +132,7 @@ class FindRestaurantDetail(MealNormalizer):
         for regex in self.restaurant_regex:
             m = re.match(regex, meal.meal_name)
             if m:
-                meal.restaurant_detail.append(text_normalizer(m.group(2)))
+                meal.set_restaurant_code(meal.restaurant_code + m.group(2))
                 meal.set_meal_name(m.group(1)+m.group(3))
         return meal
 
