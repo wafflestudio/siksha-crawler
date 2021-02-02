@@ -68,10 +68,7 @@ class Meal:
         name = text_normalizer(name, True)
         if not name:
             return False
-        for str in cls.not_meal:
-            if str in name:
-                return False
-        return True
+        return name and not any((str in name) for str in cls.not_meal)
 
     def __str__(self):
         return f"{self.type}> {self.name} | {self.restaurant} | {self.date.isoformat()} | {self.price} | {repr(', '.join(self.etc))}"
@@ -106,6 +103,14 @@ class FindPrice(MealNormalizer):
 class RemoveRestaurantNumber(MealNormalizer):
     def normalize(self, meal, **kwargs):
         meal.set_restaurant(re.sub(r'\(\d{3}-\d{4}\)', '', meal.restaurant))
+        return meal
+
+
+class AddRestaurantDetail(MealNormalizer):
+    def normalize(self, meal, **kwargs):
+        details = kwargs.get("restaurant_detail", [])
+        if details:
+            meal = meal.set_restaurant(meal.restaurant + '>' + '>'.join(details))
         return meal
 
 
@@ -149,13 +154,13 @@ class RestaurantCrawler(metaclass=ABCMeta):
     def run_30days(self):
         pass
 
-    def run(self, url=None):
+    def run(self, url=None, **kwargs):
         urllib3.disable_warnings()
         if url is None:
             url = self.url
         page = requests.get(url, headers=self.headers, timeout=35, verify=False)
         soup = BeautifulSoup(page.content, 'html.parser')
-        self.crawl(soup)
+        self.crawl(soup, **kwargs)
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
@@ -167,7 +172,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
             self.meals.append(meal)
 
     @abstractmethod
-    def crawl(self, soup):
+    def crawl(self, soup, **kwargs):
         pass
 
 
@@ -179,7 +184,7 @@ class VetRestaurantCrawler(RestaurantCrawler):
         self.run()
         return self.meals
 
-    def crawl(self, soup):
+    def crawl(self, soup, **kwargs):
         soup.div.extract()
         trs = soup.select('table > tbody > tr')
 
@@ -196,7 +201,7 @@ class VetRestaurantCrawler(RestaurantCrawler):
 class GraduateDormRestaurantCrawler(RestaurantCrawler):
     url = 'https://dorm.snu.ac.kr/dk_board/facility/food.php'
     restaurant = '기숙사식당'
-    normalizer_classes = [FindPrice,]
+    normalizer_classes = [FindPrice, AddRestaurantDetail]
 
     def run_30days(self):
         date = datetime.datetime.now(timezone('Asia/Seoul')).date()
@@ -204,14 +209,14 @@ class GraduateDormRestaurantCrawler(RestaurantCrawler):
             self.run(date=date+datetime.timedelta(weeks=i))
         return self.meals
 
-    def run(self, date=None):
+    def run(self, date=None, **kwawrgs):
         if not date:
             date = datetime.datetime.now(timezone('Asia/Seoul')).date()
         secs = datetime.datetime.combine(date, datetime.time()) - datetime.datetime(1970, 1, 1, 9)
         url = self.url + "?start_date2=" + str(secs.total_seconds())
         super().run(url)
 
-    def crawl(self, soup):
+    def crawl(self, soup, **kwargs):
         trs = soup.select('table > tbody > tr')
         ths = soup.select('table > thead > tr > th')
         lis = soup.select('div.menu > ul > li')
@@ -241,10 +246,8 @@ class GraduateDormRestaurantCrawler(RestaurantCrawler):
                     menu_type = li.attrs['class']
                     price = prices[menu_type[0]] if menu_type else ''
                     restaurant = self.restaurant
-                    if restaurant_detail[row_idx]:
-                        restaurant = restaurant + '>' + '>'.join(restaurant_detail[row_idx])
                     meal = Meal(restaurant, meal_name, dates[col_idx], type, price)
-                    meal = self.normalize(meal)
+                    meal = self.normalize(meal, restaurant_detail=restaurant_detail[row_idx])
                     self.found_meal(meal)
 
 
@@ -253,15 +256,20 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     normalizer_classes = [FindPrice, FindParenthesisHash, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
     except_restaurant_name_list = ['기숙사식당']
 
-    def run(self, date=None):
-        self.date = date if date else datetime.datetime.now(timezone('Asia/Seoul')).date()
-        url = self.url + f'?field_menu_date_value_1%5Bvalue%5D%5Bdate%5D=&field_menu_date_value%5Bvalue%5D%5Bdate%5D={self.date.month}%2F{self.date.day}%2F{self.date.year}'
-        super().run(url)
+    def run_30days(self):
+        date = datetime.datetime.now(timezone('Asia/Seoul')).date()
+        for i in range(30):
+            self.run(date=date+datetime.timedelta(days=i))
+        return self.meals
 
-    def date_normalizer(self, date):
-        return date.isoformat()
+    def run(self, date=None, **kwargs):
+        if not date:
+            date = datetime.datetime.now(timezone('Asia/Seoul')).date()
+        url = self.url + f'?field_menu_date_value_1%5Bvalue%5D%5Bdate%5D=&field_menu_date_value%5Bvalue%5D%5Bdate%5D={date.month}%2F{date.day}%2F{date.year}'
+        super().run(url, date=date, **kwargs)
 
-    def crawl(self, soup):
+    def crawl(self, soup, **kwargs):
+        date = kwargs.get("date", datetime.datetime.now(timezone('Asia/Seoul')).date())
         table = soup.select_one('div.view-content > table')
         ths = table.select('thead > tr > th')
         trs = table.select('tbody > tr')
@@ -281,7 +289,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                 last_meal = None
                 for p in ps:
                     for meal_name in p.text.split('\n'):
-                        meal = Meal(types[col_idx], meal_name, restaurant, None, self.date, -1)
+                        meal = Meal(types[col_idx], meal_name, restaurant, None, date, -1)
                         meal = self.normalize(meal)
                         if meal.restaurant_detail:
                             restaurant_detail = meal.restaurant_detail
@@ -296,14 +304,14 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                                     last_meal = meal
                             else:
                                 if last_meal:
-                                    self.print_meal(last_meal)
+                                    self.found_meal(last_meal)
                                 last_meal = meal
                         else:
                             if last_meal:
-                                self.print_meal(last_meal)
+                                self.found_meal(last_meal)
                                 last_meal = None
                 if last_meal:
-                    self.print_meal(last_meal)
+                    self.found_meal(last_meal)
 
 
 def print_meals(meals):
