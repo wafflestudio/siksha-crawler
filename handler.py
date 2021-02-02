@@ -3,7 +3,22 @@ import pymysql
 import os
 import random
 from slack import send_slack_message
-from menu_crawler import VetRestaurantCrawler, GraduateDormRestaurantCrawler, SnucoRestaurantCrawler
+from menu_crawler import text_normalizer, VetRestaurantCrawler, GraduateDormRestaurantCrawler, SnucoRestaurantCrawler
+
+
+def compare_restaurants(db_restaurants, crawled_menus):
+    codes = [rest.get('code') for rest in db_restaurants]
+    new_restaurants = []
+    for menu in crawled_menus:
+        code = text_normalizer(menu.restaurant, True)
+        if code not in codes:
+            new_restaurants.append(dict(
+                code=code,
+                name_kr=menu.restaurant,
+            ))
+            codes.append(code)
+    return new_restaurants
+
 
 def crawl(event, context):
     try:
@@ -21,24 +36,22 @@ def crawl(event, context):
             FROM restaurant
         """
         cursor.execute(get_restaurants_query)
-        restaurants = cursor.fetchall()
-        print('log using stdout')
-        print(f'get restaurants result: {repr(restaurants)}')
-        insert_restaurants_query = """
-            INSERT INTO restaurant(code, name_kr, name_en, addr, lat, lng)
-            VALUES (%(code)s, %(name_kr)s, %(name_en)s, %(addr)s, %(lat)s, %(lng)s);
-        """
-        new_restaurants = [
-            dict(
-                code=f"test{random.random()}",
-                name_kr="한글명",
-                name_en="영어명",
-                addr="한글주소",
-                lat=0,
-                lng=0
-            ) for i in range(10)
-        ]
-        cursor.executemany(insert_restaurants_query, new_restaurants)
+        db_restaurants = cursor.fetchall()
+        crawled_menus = VetRestaurantCrawler().run_30days() \
+                        + GraduateDormRestaurantCrawler().run_30days() \
+                        + SnucoRestaurantCrawler().run_30days()
+        new_restaurants = compare_restaurants(db_restaurants, crawled_menus)
+        print(f"New Restaurants: {repr(new_restaurants)}")
+        if new_restaurants:
+            slack_message = "New Restaurant Found: "
+            for restaurant in new_restaurants:
+                slack_message = slack_message + '"' + restaurant.get('name_kr') + '" '
+            send_slack_message(slack_message)
+            insert_restaurants_query = """
+                INSERT INTO restaurant(code, name_kr)
+                VALUES (%(code)s, %(name_kr)s);
+            """
+            cursor.executemany(insert_restaurants_query, new_restaurants)
         # TRANSACTION END
         siksha_db.commit()
         send_slack_message("crawling has been successfully done")
@@ -47,3 +60,6 @@ def crawl(event, context):
         siksha_db.rollback()
         send_slack_message("crawling has been failed")
         return "crawling has been failed"
+
+
+crawl(None, None)
