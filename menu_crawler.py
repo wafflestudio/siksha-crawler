@@ -21,19 +21,19 @@ class Meal:
     type_handler = {BR: BR, LU: LU, DN: DN, '아침': BR, '점심': LU, '저녁': DN, '중식': LU, '석식': DN}
     not_meal = ['휴무', '휴점', '폐점', '제공']
 
-    def __init__(self, restaurant_code='', code='', date=None, type='', price=-1, etc=None):
-        self.set_restaurant_code(restaurant_code)
-        self.set_code(code)
+    def __init__(self, restaurant='', name='', date=None, type='', price=-1, etc=None):
+        self.set_restaurant(restaurant)
+        self.set_name(name)
         self.set_date(date)
         self.set_type(type)
         self.set_price(price)
         self.set_etc(etc)
 
-    def set_restaurant_code(self, restaurant_code):
-        self.restaurant_code = text_normalizer(restaurant_code)
+    def set_restaurant(self, restaurant):
+        self.restaurant = text_normalizer(restaurant)
 
-    def set_code(self, code):
-        self.code = text_normalizer(code)
+    def set_name(self, name):
+        self.name = text_normalizer(name)
 
     def set_date(self, date=None):
         if not date:
@@ -64,22 +64,22 @@ class Meal:
         self.etc = etc if etc else []
 
     @classmethod
-    def is_meal_code(cls, code):
-        code = text_normalizer(code, True)
-        if not code:
+    def is_meal_name(cls, name):
+        name = text_normalizer(name, True)
+        if not name:
             return False
         for str in cls.not_meal:
-            if str in code:
+            if str in name:
                 return False
         return True
 
     def __str__(self):
-        return f"{self.type}> {self.code} | {self.restaurant_code} | {self.date.isoformat()} | {self.price} | {repr(', '.join(self.etc))}"
+        return f"{self.type}> {self.name} | {self.restaurant} | {self.date.isoformat()} | {self.price} | {repr(', '.join(self.etc))}"
 
     def as_dict(self):
         return dict(
-            restaurant_code=self.restaurant_code,
-            code=self.code,
+            restaurant_code=self.restaurant,
+            code=self.name,
             date=self.date,
             type=self.type,
             price=self.price,
@@ -96,10 +96,10 @@ class MealNormalizer(metaclass=ABCMeta):
 class FindPrice(MealNormalizer):
     def normalize(self, meal, **kwargs):
         p = re.compile(r'[1-9]\d{0,2},?\d00원?')
-        m = p.search(meal.code)
+        m = p.search(meal.name)
         if m:
             meal.set_price(m.group())
-            meal.set_code(p.sub('', meal.code))
+            meal.set_name(p.sub('', meal.name))
         return meal
 
 
@@ -112,14 +112,14 @@ class RemoveRestaurantNumber(MealNormalizer):
 class RemoveInfoFromMealName(MealNormalizer):
     info_sign = ['※', '►', '※']
     def normalize(self, meal, **kwargs):
-        meal.set_code(re.sub('(' + '|'.join(self.info_sign) + ').*', '', meal.code))
+        meal.set_name(re.sub('(' + '|'.join(self.info_sign) + ').*', '', meal.name))
         return meal
 
 
 class FindParenthesisHash(MealNormalizer):
     def normalize(self, meal, **kwargs):
-        if '(#)' in meal.code:
-            meal.set_code(meal.code.replace('(#)', ''))
+        if '(#)' in meal.name:
+            meal.set_name(meal.name.replace('(#)', ''))
             meal.etc.append("No meat")
         return meal
 
@@ -132,8 +132,8 @@ class FindRestaurantDetail(MealNormalizer):
         for regex in self.restaurant_regex:
             m = re.match(regex, meal.meal_name)
             if m:
-                meal.set_restaurant_code(meal.restaurant_code + '>' + m.group(2).strip())
-                meal.set_meal_name(m.group(1).strip()+m.group(3).strip())
+                meal.set_restaurant(meal.restaurant+ '>' + m.group(2).strip())
+                meal.set_name(m.group(1).strip() + m.group(3).strip())
         return meal
 
 
@@ -141,7 +141,9 @@ class RestaurantCrawler(metaclass=ABCMeta):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0'}
     url = ''
     normalizer_classes = []
-    meals = []
+
+    def __init__(self):
+        self.meals = []
 
     @abstractmethod
     def run_30days(self):
@@ -161,7 +163,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
         return meal
 
     def found_meal(self, meal):
-        if Meal.is_meal_code(meal.code):
+        if Meal.is_meal_name(meal.name):
             self.meals.append(meal)
 
     @abstractmethod
@@ -195,6 +197,12 @@ class GraduateDormRestaurantCrawler(RestaurantCrawler):
     url = 'https://dorm.snu.ac.kr/dk_board/facility/food.php'
     restaurant = '기숙사식당'
     normalizer_classes = [FindPrice,]
+
+    def run_30days(self):
+        date = datetime.datetime.now(timezone('Asia/Seoul')).date()
+        for i in range(4):
+            self.run(date=date+datetime.timedelta(weeks=i))
+        return self.meals
 
     def run(self, date=None):
         if not date:
@@ -232,9 +240,12 @@ class GraduateDormRestaurantCrawler(RestaurantCrawler):
                     meal_name = li.text
                     menu_type = li.attrs['class']
                     price = prices[menu_type[0]] if menu_type else ''
-                    meal = Meal(type, meal_name, self.restaurant, restaurant_detail[row_idx], dates[col_idx], price)
+                    restaurant = self.restaurant
+                    if restaurant_detail[row_idx]:
+                        restaurant = restaurant + '>' + '>'.join(restaurant_detail[row_idx])
+                    meal = Meal(restaurant, meal_name, dates[col_idx], type, price)
                     meal = self.normalize(meal)
-                    self.print_meal(meal)
+                    self.found_meal(meal)
 
 
 class SnucoRestaurantCrawler(RestaurantCrawler):
@@ -299,10 +310,13 @@ def print_meals(meals):
     print('[')
     for meal in meals:
         print('\t' + str(meal))
-    print(']\n\n')
+    print(']')
 
 
 print_meals(VetRestaurantCrawler().run_30days())
+print_meals(GraduateDormRestaurantCrawler().run_30days())
+
+
 #GraduateDormRestaurantCrawler().run()
 #GraduateDormRestaurantCrawler().run(datetime.date(2021, 1, 31))
 #SnucoRestaurantCrawler().run()
