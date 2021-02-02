@@ -7,10 +7,11 @@ from pytz import timezone
 import urllib3
 
 
-def text_normalizer(text, remove_space=False):
-    text = re.sub(r'\n|\(\)|<>', '', text).strip()
-    if remove_space:
-        text = re.sub(r'\s', '', text)
+def text_normalizer(text, only_letters=False):
+    non_letters = [r'\s', '<', '>', r'\(', r'\)', r'\[', r'\]', ',', r'\*', '&', r'\+', r'/', ':']
+    text = re.sub(r'\n|\(\)|<>', '', text).strip().strip(':')
+    if only_letters:
+        text = re.sub('|'.join(non_letters), '', text)
     return text
 
 
@@ -19,7 +20,7 @@ class Meal:
     LU = 'LU'
     DN = 'DN'
     type_handler = {BR: BR, LU: LU, DN: DN, '아침': BR, '점심': LU, '저녁': DN, '중식': LU, '석식': DN}
-    not_meal = ['휴무', '휴점', '폐점', '제공']
+    not_meal = ['휴무', '휴점', '폐점', '제공', '운영']
 
     def __init__(self, restaurant='', name='', date=None, type='', price=-1, etc=None):
         self.set_restaurant(restaurant)
@@ -110,7 +111,7 @@ class AddRestaurantDetail(MealNormalizer):
     def normalize(self, meal, **kwargs):
         details = kwargs.get("restaurant_detail", [])
         if details:
-            meal = meal.set_restaurant(meal.restaurant + '>' + '>'.join(details))
+            meal.set_restaurant(meal.restaurant + '>' + '>'.join(details))
         return meal
 
 
@@ -135,7 +136,7 @@ class FindRestaurantDetail(MealNormalizer):
 
     def normalize(self, meal, **kwargs):
         for regex in self.restaurant_regex:
-            m = re.match(regex, meal.meal_name)
+            m = re.match(regex, meal.name)
             if m:
                 meal.set_restaurant(meal.restaurant+ '>' + m.group(2).strip())
                 meal.set_name(m.group(1).strip() + m.group(3).strip())
@@ -168,7 +169,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
         return meal
 
     def found_meal(self, meal):
-        if Meal.is_meal_name(meal.name):
+        if meal and Meal.is_meal_name(meal.name):
             self.meals.append(meal)
 
     @abstractmethod
@@ -242,19 +243,40 @@ class GraduateDormRestaurantCrawler(RestaurantCrawler):
 
             for col_idx, td in enumerate(tds[-7:]):
                 for li in td.select('ul > li'):
-                    meal_name = li.text
+                    name = li.text
                     menu_type = li.attrs['class']
                     price = prices[menu_type[0]] if menu_type else ''
                     restaurant = self.restaurant
-                    meal = Meal(restaurant, meal_name, dates[col_idx], type, price)
+                    meal = Meal(restaurant, name, dates[col_idx], type, price)
                     meal = self.normalize(meal, restaurant_detail=restaurant_detail[row_idx])
                     self.found_meal(meal)
 
 
 class SnucoRestaurantCrawler(RestaurantCrawler):
     url = 'https://snuco.snu.ac.kr/ko/foodmenu'
-    normalizer_classes = [FindPrice, FindParenthesisHash, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
+    normalizer_classes = [FindPrice, FindParenthesisHash, AddRestaurantDetail, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
     except_restaurant_name_list = ['기숙사식당']
+    next_line_keywords = ['테이크아웃']
+
+    def is_next_line_keyword(self, name):
+        code = text_normalizer(name, True)
+        return any((str == code) for str in self.next_line_keywords)
+
+    def should_combine(self, last_meal, meal):
+        if not last_meal:
+            return False
+        return self.is_next_line_keyword(last_meal.name)\
+               or (meal.price == -1 and not self.is_next_line_keyword(meal.name))
+
+    def combine(self, last_meal, meal):
+        if not last_meal:
+            return meal
+        if not meal:
+            return last_meal
+        last_meal.set_name(last_meal.name + ': ' + meal.name)
+        if last_meal.price == -1:
+            last_meal.set_price(meal.price)
+        return last_meal
 
     def run_30days(self):
         date = datetime.datetime.now(timezone('Asia/Seoul')).date()
@@ -271,6 +293,8 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     def crawl(self, soup, **kwargs):
         date = kwargs.get("date", datetime.datetime.now(timezone('Asia/Seoul')).date())
         table = soup.select_one('div.view-content > table')
+        if not table:
+            return
         ths = table.select('thead > tr > th')
         trs = table.select('tbody > tr')
 
@@ -288,28 +312,19 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                 restaurant_detail = []
                 last_meal = None
                 for p in ps:
-                    for meal_name in p.text.split('\n'):
-                        meal = Meal(types[col_idx], meal_name, restaurant, None, date, -1)
-                        meal = self.normalize(meal)
-                        if meal.restaurant_detail:
-                            restaurant_detail = meal.restaurant_detail
-                        else:
-                            meal.restaurant_detail = restaurant_detail
+                    for name in p.text.split('\n'):
+                        meal = Meal(restaurant, name, date, types[col_idx])
+                        meal = self.normalize(meal, restaurant_detail=restaurant_detail)
 
-                        if Meal.is_meal_name(meal.meal_name):
-                            if meal.price == -1:
-                                if last_meal:
-                                    last_meal.set_meal_name(f'{last_meal.meal_name}: {meal.meal_name}')
-                                else:
-                                    last_meal = meal
+                        if Meal.is_meal_name(meal.name):
+                            if self.should_combine(last_meal, meal):
+                                last_meal = self.combine(last_meal, meal)
                             else:
-                                if last_meal:
-                                    self.found_meal(last_meal)
+                                self.found_meal(last_meal)
                                 last_meal = meal
                         else:
-                            if last_meal:
-                                self.found_meal(last_meal)
-                                last_meal = None
+                            self.found_meal(last_meal)
+                            last_meal = None
                 if last_meal:
                     self.found_meal(last_meal)
 
@@ -323,9 +338,8 @@ def print_meals(meals):
 
 print_meals(VetRestaurantCrawler().run_30days())
 print_meals(GraduateDormRestaurantCrawler().run_30days())
+print_meals(SnucoRestaurantCrawler().run_30days())
 
-
-#GraduateDormRestaurantCrawler().run()
-#GraduateDormRestaurantCrawler().run(datetime.date(2021, 1, 31))
-#SnucoRestaurantCrawler().run()
-#SnucoRestaurantCrawler().run(datetime.date(2021, 1, 28))
+#snuco = SnucoRestaurantCrawler()
+#snuco.run(date=datetime.date(2021, 2, 10))
+#print_meals(snuco.meals)
