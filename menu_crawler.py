@@ -132,8 +132,8 @@ class FindRestaurantDetail(MealNormalizer):
         for regex in self.restaurant_regex:
             m = re.match(regex, meal.meal_name)
             if m:
-                meal.set_restaurant_code(meal.restaurant_code + m.group(2))
-                meal.set_meal_name(m.group(1)+m.group(3))
+                meal.set_restaurant_code(meal.restaurant_code + '>' + m.group(2).strip())
+                meal.set_meal_name(m.group(1).strip()+m.group(3).strip())
         return meal
 
 
@@ -154,18 +154,13 @@ class RestaurantCrawler(metaclass=ABCMeta):
         page = requests.get(url, headers=self.headers, timeout=35, verify=False)
         soup = BeautifulSoup(page.content, 'html.parser')
         self.crawl(soup)
-        return self.meals
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
             meal = normalizer_cls().normalize(meal, **kwargs)
         return meal
 
-    def print_meal(self, meal):
-        if Meal.is_meal_code(meal.code):
-            print(meal)
-
-    def meal_found(self, meal):
+    def found_meal(self, meal):
         if Meal.is_meal_code(meal.code):
             self.meals.append(meal)
 
@@ -178,6 +173,10 @@ class VetRestaurantCrawler(RestaurantCrawler):
     url = 'http://vet.snu.ac.kr/node/152'
     restaurant = '수의대식당'
 
+    def run_30days(self):
+        self.run()
+        return self.meals
+
     def crawl(self, soup):
         soup.div.extract()
         trs = soup.select('table > tbody > tr')
@@ -188,8 +187,8 @@ class VetRestaurantCrawler(RestaurantCrawler):
             tds = tr.find_all("td")
             date = tds[0].text
             for col_idx, td in enumerate(tds[1:]):
-                meal = self.normalize(Meal(types[col_idx], td.text, self.restaurant, date=date))
-                self.print_meal(meal)
+                meal = self.normalize(Meal(self.restaurant, td.text, date, types[col_idx]))
+                self.found_meal(meal)
 
 
 class GraduateDormRestaurantCrawler(RestaurantCrawler):
@@ -296,9 +295,15 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                     self.print_meal(last_meal)
 
 
+def print_meals(meals):
+    print('[')
+    for meal in meals:
+        print('\t' + str(meal))
+    print(']\n\n')
 
-#VetRestaurantCrawler().run()
+
+print_meals(VetRestaurantCrawler().run_30days())
 #GraduateDormRestaurantCrawler().run()
 #GraduateDormRestaurantCrawler().run(datetime.date(2021, 1, 31))
-SnucoRestaurantCrawler().run()
+#SnucoRestaurantCrawler().run()
 #SnucoRestaurantCrawler().run(datetime.date(2021, 1, 28))
