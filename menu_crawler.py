@@ -334,12 +334,13 @@ def print_meals(meals):
     for meal in meals:
         print('\t' + str(meal))
     print(']')
+    print('total #:', len(meals))
 
 
-print_meals(VetRestaurantCrawler().run_30days())
-print_meals(GraduateDormRestaurantCrawler().run_30days())
-print_meals(SnucoRestaurantCrawler().run_30days())
+#print_meals(VetRestaurantCrawler().run_30days())
+#print_meals(GraduateDormRestaurantCrawler().run_30days())
+#print_meals(SnucoRestaurantCrawler().run_30days())
 
 #snuco = SnucoRestaurantCrawler()
-#snuco.run(date=datetime.date(2021, 2, 10))
+#snuco.run(date=datetime.date(2021, 2, 3))
 #print_meals(snuco.meals)
