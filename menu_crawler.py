@@ -5,6 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 from pytz import timezone
 import urllib3
+import json
 
 
 def text_normalizer(text, only_letters=False):
@@ -76,12 +77,12 @@ class Meal:
 
     def as_dict(self):
         return dict(
-            restaurant_code=self.restaurant,
-            code=self.name,
+            restaurant=self.restaurant,
+            name=self.name,
             date=self.date,
             type=self.type,
             price=self.price,
-            etc=self.etc
+            etc=repr(self.etc)
         )
 
 
@@ -265,7 +266,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     def should_combine(self, last_meal, meal):
         if not last_meal:
             return False
-        return self.is_next_line_keyword(last_meal.name)\
+        return self.is_next_line_keyword(last_meal.name) \
                or (meal.price == -1 and not self.is_next_line_keyword(meal.name))
 
     def combine(self, last_meal, meal):
