@@ -72,11 +72,11 @@ def menus_transaction(crawled_meals, cursor):
     """
     cursor.execute(get_restaurants_query)
     restaurants = cursor.fetchall()
-    date = datetime.datetime.now(timezone('Asia/Seoul')).date()
+    today = datetime.datetime.now(timezone('Asia/Seoul')).date()
     get_menus_query = f"""
         SELECT id, restaurant_id, code, date, type, price, etc
         FROM menu
-        WHERE date>={date.isoformat()};
+        WHERE date>='{today.isoformat()}';
     """
     cursor.execute(get_menus_query)
     db_menus = cursor.fetchall()
@@ -118,6 +118,8 @@ def crawl(event, context):
         crawled_meals = VetRestaurantCrawler().run_30days() \
                         + GraduateDormRestaurantCrawler().run_30days() \
                         + SnucoRestaurantCrawler().run_30days()
+        today = datetime.datetime.now(timezone('Asia/Seoul')).date()
+        crawled_meals = list(filter(lambda meal: meal.date >= today, crawled_meals))
         restaurants_transaction(crawled_meals, cursor)
         siksha_db.commit()
         menus_transaction(crawled_meals, cursor)
@@ -131,4 +133,4 @@ def crawl(event, context):
         return "crawling has been failed"
 
 
-#crawl(None, None)
+crawl(None, None)
