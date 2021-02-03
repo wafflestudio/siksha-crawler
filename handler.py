@@ -35,8 +35,6 @@ def compare_menus(db_menus, crawled_meals, restaurants):
 
     db_not_found = [True] * len(db_menus)
     crawled_not_found = [True] * len(crawled_menus)
-    print(db_menus)
-    print(crawled_menus)
     for db_idx in range(len(db_menus)):
         for crawled_idx in range(len(crawled_menus)):
             if all((db_menus[db_idx].get(field, None) == crawled_menus[crawled_idx].get(field)) for field in fields):
