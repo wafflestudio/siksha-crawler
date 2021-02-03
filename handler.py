@@ -94,6 +94,9 @@ def menus_transaction(crawled_meals, cursor):
         cursor.execute(delete_menus_query)
 
     print(f"New Menus: {repr(new_menus)}")
+    new_menus_to_check = list(filter(lambda menu: ':' in menu.get('name_kr'), new_menus))
+    if new_menus_to_check:
+        send_slack_message(f"New Menus to be Checked: {repr(new_menus_to_check)}")
     insert_menus_query = """
         INSERT INTO menu(restaurant_id, code, date, type, name_kr, price, etc)
         VALUES (%(restaurant_id)s, %(code)s, %(date)s, %(type)s, %(name_kr)s, %(price)s, %(etc)s);
@@ -133,4 +136,4 @@ def crawl(event, context):
         return "crawling has been failed"
 
 
-crawl(None, None)
+#crawl(None, None)
