@@ -9,7 +9,7 @@ import json
 
 
 def text_normalizer(text, only_letters=False):
-    non_letters = [r'\s', '<', '>', r'\(', r'\)', r'\[', r'\]', ',', r'\*', '&', r'\+', r'/', ':']
+    non_letters = [r'\s', '<', '>', r'\(', r'\)', r'\[', r'\]', ',', r'\*', '&', r'\+', '-', r'/', ':']
     text = re.sub(r'\n|\(\)|<>', '', text).strip().strip(':')
     if only_letters:
         text = re.sub('|'.join(non_letters), '', text)
