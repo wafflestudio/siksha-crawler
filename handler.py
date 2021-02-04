@@ -83,9 +83,9 @@ def menus_transaction(crawled_meals, cursor):
 
     new_menus, deleted_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
-    print(f"Deleted Menus: {repr(deleted_menus)}")
+    print(f"{len(deleted_menus)} Deleted menus found: {repr(deleted_menus)}")
     if deleted_menus:
-        send_slack_message(f"Deleted Menus: {repr(deleted_menus)}")
+        send_slack_message(f"{len(deleted_menus)} Deleted menus found: {repr(deleted_menus)}")
         deleted_menus_id = [str(menu.get('id')) for menu in deleted_menus]
         delete_menus_query = f"""
             DELETE FROM menu
@@ -93,10 +93,11 @@ def menus_transaction(crawled_meals, cursor):
         """
         cursor.execute(delete_menus_query)
 
-    print(f"New Menus: {repr(new_menus)}")
+    send_slack_message(f"{len(new_menus)} New menus found.")
+    print(f"{len(new_menus)} New menus found: {repr(new_menus)}")
     new_menus_to_check = list(filter(lambda menu: ':' in menu.get('name_kr'), new_menus))
     if new_menus_to_check:
-        send_slack_message(f"New Menus to be Checked: {repr(new_menus_to_check)}")
+        send_slack_message(f"{len(new_menus_to_check)} New menus to be checked: {repr(new_menus_to_check)}")
     insert_menus_query = """
         INSERT INTO menu(restaurant_id, code, date, type, name_kr, price, etc)
         VALUES (%(restaurant_id)s, %(code)s, %(date)s, %(type)s, %(name_kr)s, %(price)s, %(etc)s);
@@ -108,7 +109,7 @@ def menus_transaction(crawled_meals, cursor):
 
 def crawl(event, context):
     try:
-        print("start crawling")
+        print("Start crawling")
         siksha_db = pymysql.connect(
             user=os.environ.get('DB_USER', 'root'),
             passwd=os.environ.get('DB_PASSWORD', 'waffle'),
@@ -132,8 +133,8 @@ def crawl(event, context):
         return "Crawling has been successfully done"
     except:
         siksha_db.rollback()
-        send_slack_message("crawling has been failed")
-        return "crawling has been failed"
+        send_slack_message("Crawling has been failed")
+        return "Crawling has been failed"
 
 
 #crawl(None, None)
