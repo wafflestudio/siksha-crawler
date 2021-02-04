@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 from pytz import timezone
 import urllib3
 import json
+import asyncio
+import aiohttp
 
 
 def text_normalizer(text, only_letters=False):
@@ -156,13 +158,15 @@ class RestaurantCrawler(metaclass=ABCMeta):
     def run_30days(self):
         pass
 
-    def run(self, url=None, **kwargs):
+    async def run(self, url=None, **kwargs):
         urllib3.disable_warnings()
         if url is None:
             url = self.url
-        page = requests.get(url, headers=self.headers, timeout=35, verify=False)
-        soup = BeautifulSoup(page.content, 'html.parser')
-        self.crawl(soup, **kwargs)
+        async with aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)) as session:
+            async with session.get(url) as response:
+                html = await response.read()
+                soup = BeautifulSoup(html, 'html.parser')
+                self.crawl(soup, **kwargs)
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
@@ -182,9 +186,8 @@ class VetRestaurantCrawler(RestaurantCrawler):
     url = 'http://vet.snu.ac.kr/node/152'
     restaurant = '수의대식당'
 
-    def run_30days(self):
-        self.run()
-        return self.meals
+    async def run_30days(self):
+        await self.run()
 
     def crawl(self, soup, **kwargs):
         soup.div.extract()
@@ -205,18 +208,17 @@ class GraduateDormRestaurantCrawler(RestaurantCrawler):
     restaurant = '기숙사식당'
     normalizer_classes = [FindPrice, AddRestaurantDetail]
 
-    def run_30days(self):
+    async def run_30days(self):
         date = datetime.datetime.now(timezone('Asia/Seoul')).date()
-        for i in range(4):
-            self.run(date=date+datetime.timedelta(weeks=i))
-        return self.meals
+        tasks = [asyncio.create_task(self.run(date=date+datetime.timedelta(weeks=i))) for i in range(4)]
+        await asyncio.wait(tasks)
 
-    def run(self, date=None, **kwawrgs):
+    async def run(self, date=None, **kwawrgs):
         if not date:
             date = datetime.datetime.now(timezone('Asia/Seoul')).date()
         secs = datetime.datetime.combine(date, datetime.time()) - datetime.datetime(1970, 1, 1, 9)
         url = self.url + "?start_date2=" + str(secs.total_seconds())
-        super().run(url)
+        await super().run(url)
 
     def crawl(self, soup, **kwargs):
         trs = soup.select('table > tbody > tr')
@@ -279,17 +281,16 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
             last_meal.set_price(meal.price)
         return last_meal
 
-    def run_30days(self):
+    async def run_30days(self):
         date = datetime.datetime.now(timezone('Asia/Seoul')).date()
-        for i in range(30):
-            self.run(date=date+datetime.timedelta(days=i))
-        return self.meals
+        tasks = [asyncio.create_task(self.run(date=date+datetime.timedelta(days=i))) for i in range(30)]
+        await asyncio.wait(tasks)
 
-    def run(self, date=None, **kwargs):
+    async def run(self, date=None, **kwargs):
         if not date:
             date = datetime.datetime.now(timezone('Asia/Seoul')).date()
         url = self.url + f'?field_menu_date_value_1%5Bvalue%5D%5Bdate%5D=&field_menu_date_value%5Bvalue%5D%5Bdate%5D={date.month}%2F{date.day}%2F{date.year}'
-        super().run(url, date=date, **kwargs)
+        await super().run(url, date=date, **kwargs)
 
     def crawl(self, soup, **kwargs):
         date = kwargs.get("date", datetime.datetime.now(timezone('Asia/Seoul')).date())
@@ -338,10 +339,6 @@ def print_meals(meals):
     print('total #:', len(meals))
 
 
-#print_meals(VetRestaurantCrawler().run_30days())
-#print_meals(GraduateDormRestaurantCrawler().run_30days())
-#print_meals(SnucoRestaurantCrawler().run_30days())
-
-#snuco = SnucoRestaurantCrawler()
-#snuco.run(date=datetime.date(2021, 2, 3))
-#print_meals(snuco.meals)
+#crawler = GraduateDormRestaurantCrawler()
+#asyncio.run(crawler.run_30days())
+#print_meals(crawler.meals)
