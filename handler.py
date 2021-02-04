@@ -23,7 +23,8 @@ def compare_restaurants(db_restaurants, crawled_meals):
 
 
 def compare_menus(db_menus, crawled_meals, restaurants):
-    fields = ['restaurant_id', 'code', 'date', 'type', 'price', 'etc']
+    unique_fields = ['restaurant_id', 'code', 'date', 'type']
+    detail_fields = ['price', 'etc']
     restaurant_dict = {restaurant.get('code'): restaurant.get('id') for restaurant in restaurants}
     crawled_menus = [meal.as_dict() for meal in crawled_meals]
     for menu in crawled_menus:
@@ -35,12 +36,17 @@ def compare_menus(db_menus, crawled_meals, restaurants):
 
     db_not_found = [True] * len(db_menus)
     crawled_not_found = [True] * len(crawled_menus)
+    edited_menus = []
     for db_idx in range(len(db_menus)):
         for crawled_idx in range(len(crawled_menus)):
-            if all((db_menus[db_idx].get(field, None) == crawled_menus[crawled_idx].get(field)) for field in fields):
+            if all((db_menus[db_idx].get(field, None) == crawled_menus[crawled_idx].get(field)) for field in unique_fields):
                 db_not_found[db_idx] = False
                 crawled_not_found[crawled_idx] = False
-    return list(compress(crawled_menus, crawled_not_found)), list(compress(db_menus, db_not_found))
+                if any((db_menus[db_idx].get(field, None) != crawled_menus[crawled_idx].get(field)) for field in detail_fields):
+                    menu = crawled_menus[crawled_idx]
+                    menu['id'] = db_menus[db_idx].get('id')
+                    edited_menus.append(menu)
+    return list(compress(crawled_menus, crawled_not_found)), list(compress(db_menus, db_not_found)), edited_menus
 
 
 def send_new_restaurants_message(new_restaurants):
@@ -87,6 +93,12 @@ def send_new_menus_message(new_menus):
         send_slack_message(f"{len(new_menus_to_check)} New menus to be checked: {repr(new_menus_to_check)}")
 
 
+def send_edited_menus_message(edited_menus):
+    print(f"{len(edited_menus)} Edited menus found: {repr(edited_menus)}")
+    if edited_menus:
+        send_slack_message(f"{len(edited_menus)} Edited menus found: {repr(edited_menus)}")
+
+
 def menus_transaction(crawled_meals, cursor):
     get_restaurants_query = """
         SELECT id, code
@@ -103,7 +115,7 @@ def menus_transaction(crawled_meals, cursor):
     cursor.execute(get_menus_query)
     db_menus = cursor.fetchall()
 
-    new_menus, deleted_menus = compare_menus(db_menus, crawled_meals, restaurants)
+    new_menus, deleted_menus, edited_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
     send_deleted_menus_message(deleted_menus)
     if deleted_menus:
@@ -120,6 +132,14 @@ def menus_transaction(crawled_meals, cursor):
         VALUES (%(restaurant_id)s, %(code)s, %(date)s, %(type)s, %(name_kr)s, %(price)s, %(etc)s);
     """
     cursor.executemany(insert_menus_query, new_menus)
+
+    send_edited_menus_message(edited_menus)
+    edited_menus_query = """
+        UPDATE menu
+        SET price=%(price)s, etc=%(etc)s
+        WHERE id=%(id)s;
+    """
+    cursor.executemany(edited_menus_query, edited_menus)
 
     print("Menus checked")
 
