@@ -5,6 +5,7 @@ provider:
   name: aws
   runtime: python3.8
   region: ap-northeast-2
+  timeout: 60
   role: arn:aws:iam::405906814034:role/siksha-lambda-role
   lambdaHashingVersion: 20201221
 
@@ -19,6 +20,7 @@ custom:
 functions:
   crawler:
     handler: handler.crawl
+    timeout: 60
     environment:
       DB_HOST: siksha.caxwrw8c4qqq.ap-northeast-2.rds.amazonaws.com
       DB_NAME: siksha
