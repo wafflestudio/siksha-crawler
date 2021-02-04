@@ -4,6 +4,7 @@ import os
 import datetime
 from pytz import timezone
 from itertools import compress
+import asyncio
 from slack import send_slack_message
 from menu_crawler import text_normalizer, VetRestaurantCrawler, GraduateDormRestaurantCrawler, SnucoRestaurantCrawler
 
@@ -119,9 +120,13 @@ def crawl(event, context):
         )
         cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
 
-        crawled_meals = VetRestaurantCrawler().run_30days() \
-                        + GraduateDormRestaurantCrawler().run_30days() \
-                        + SnucoRestaurantCrawler().run_30days()
+        #crawlers = [VetRestaurantCrawler(), GraduateDormRestaurantCrawler(), SnucoRestaurantCrawler()]
+        crawlers = [VetRestaurantCrawler(), SnucoRestaurantCrawler()]
+        tasks = [crawler.run_30days() for crawler in crawlers]
+        asyncio.run(asyncio.wait(tasks))
+        crawled_meals = []
+        for crawler in crawlers:
+            crawled_meals = crawled_meals + crawler.meals
         today = datetime.datetime.now(timezone('Asia/Seoul')).date()
         crawled_meals = list(filter(lambda meal: meal.date >= today, crawled_meals))
         restaurants_transaction(crawled_meals, cursor)
