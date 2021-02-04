@@ -23,7 +23,8 @@ def compare_restaurants(db_restaurants, crawled_meals):
 
 
 def compare_menus(db_menus, crawled_meals, restaurants):
-    fields = ['restaurant_id', 'code', 'date', 'type', 'price', 'etc']
+    unique_fields = ['restaurant_id', 'code', 'date', 'type']
+    detail_fields = ['price', 'etc']
     restaurant_dict = {restaurant.get('code'): restaurant.get('id') for restaurant in restaurants}
     crawled_menus = [meal.as_dict() for meal in crawled_meals]
     for menu in crawled_menus:
@@ -35,12 +36,26 @@ def compare_menus(db_menus, crawled_meals, restaurants):
 
     db_not_found = [True] * len(db_menus)
     crawled_not_found = [True] * len(crawled_menus)
+    edited_menus = []
     for db_idx in range(len(db_menus)):
         for crawled_idx in range(len(crawled_menus)):
-            if all((db_menus[db_idx].get(field, None) == crawled_menus[crawled_idx].get(field)) for field in fields):
+            if all((db_menus[db_idx].get(field, None) == crawled_menus[crawled_idx].get(field)) for field in unique_fields):
                 db_not_found[db_idx] = False
                 crawled_not_found[crawled_idx] = False
-    return list(compress(crawled_menus, crawled_not_found)), list(compress(db_menus, db_not_found))
+                if any((db_menus[db_idx].get(field, None) != crawled_menus[crawled_idx].get(field)) for field in detail_fields):
+                    menu = crawled_menus[crawled_idx]
+                    menu['id'] = db_menus[db_idx].get('id')
+                    edited_menus.append(menu)
+    return list(compress(crawled_menus, crawled_not_found)), list(compress(db_menus, db_not_found)), edited_menus
+
+
+def send_new_restaurants_message(new_restaurants):
+    print(f"New restaurants: {repr(new_restaurants)}")
+    if new_restaurants:
+        slack_message = f"{len(new_restaurants)} new restaurants found: "
+        for restaurant in new_restaurants:
+            slack_message = slack_message + '"' + restaurant.get('name_kr') + '" '
+        send_slack_message(slack_message)
 
 
 def restaurants_transaction(crawled_meals, cursor):
@@ -51,18 +66,36 @@ def restaurants_transaction(crawled_meals, cursor):
     cursor.execute(get_restaurants_query)
     db_restaurants = cursor.fetchall()
     new_restaurants = compare_restaurants(db_restaurants, crawled_meals)
-    print(f"New Restaurants: {repr(new_restaurants)}")
-    if new_restaurants:
-        slack_message = "New Restaurant(s) Found: "
-        for restaurant in new_restaurants:
-            slack_message = slack_message + '"' + restaurant.get('name_kr') + '" '
-        send_slack_message(slack_message)
-        insert_restaurants_query = """
-            INSERT INTO restaurant(code, name_kr)
-            VALUES (%(code)s, %(name_kr)s);
-        """
-        cursor.executemany(insert_restaurants_query, new_restaurants)
+    send_new_restaurants_message(new_restaurants)
+    insert_restaurants_query = """
+        INSERT INTO restaurant(code, name_kr)
+        VALUES (%(code)s, %(name_kr)s);
+    """
+    cursor.executemany(insert_restaurants_query, new_restaurants)
     print("Restaurants checked")
+
+
+def send_deleted_menus_message(deleted_menus):
+    print(f"Menus deleted: {repr(deleted_menus)}")
+    if deleted_menus:
+        send_slack_message(f"{len(deleted_menus)} menus deleted: {repr(deleted_menus)}")
+
+
+def send_new_menus_message(new_menus):
+    slack_message = f"{len(new_menus)} new menus found: "
+    for menu in new_menus:
+        slack_message = slack_message + '"' + menu.get('name_kr') + '" '
+    send_slack_message(slack_message)
+    print(f"New menus found: {repr(new_menus)}")
+    new_menus_to_check = list(filter(lambda menu: ':' in menu.get('name_kr'), new_menus))
+    if new_menus_to_check:
+        send_slack_message(f"{len(new_menus_to_check)} new menus to be checked: {repr(new_menus_to_check)}")
+
+
+def send_edited_menus_message(edited_menus):
+    print(f"Menus edited: {repr(edited_menus)}")
+    if edited_menus:
+        send_slack_message(f"{len(edited_menus)} menus edited: {repr(edited_menus)}")
 
 
 def menus_transaction(crawled_meals, cursor):
@@ -81,11 +114,10 @@ def menus_transaction(crawled_meals, cursor):
     cursor.execute(get_menus_query)
     db_menus = cursor.fetchall()
 
-    new_menus, deleted_menus = compare_menus(db_menus, crawled_meals, restaurants)
+    new_menus, deleted_menus, edited_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
-    print(f"{len(deleted_menus)} Deleted menus found: {repr(deleted_menus)}")
+    send_deleted_menus_message(deleted_menus)
     if deleted_menus:
-        send_slack_message(f"{len(deleted_menus)} Deleted menus found: {repr(deleted_menus)}")
         deleted_menus_id = [str(menu.get('id')) for menu in deleted_menus]
         delete_menus_query = f"""
             DELETE FROM menu
@@ -93,16 +125,20 @@ def menus_transaction(crawled_meals, cursor):
         """
         cursor.execute(delete_menus_query)
 
-    send_slack_message(f"{len(new_menus)} New menus found.")
-    print(f"{len(new_menus)} New menus found: {repr(new_menus)}")
-    new_menus_to_check = list(filter(lambda menu: ':' in menu.get('name_kr'), new_menus))
-    if new_menus_to_check:
-        send_slack_message(f"{len(new_menus_to_check)} New menus to be checked: {repr(new_menus_to_check)}")
+    send_new_menus_message(new_menus)
     insert_menus_query = """
         INSERT INTO menu(restaurant_id, code, date, type, name_kr, price, etc)
         VALUES (%(restaurant_id)s, %(code)s, %(date)s, %(type)s, %(name_kr)s, %(price)s, %(etc)s);
     """
     cursor.executemany(insert_menus_query, new_menus)
+
+    send_edited_menus_message(edited_menus)
+    edited_menus_query = """
+        UPDATE menu
+        SET price=%(price)s, etc=%(etc)s
+        WHERE id=%(id)s;
+    """
+    cursor.executemany(edited_menus_query, edited_menus)
 
     print("Menus checked")
 
