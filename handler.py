@@ -50,9 +50,9 @@ def compare_menus(db_menus, crawled_meals, restaurants):
 
 
 def send_new_restaurants_message(new_restaurants):
-    print(f"New Restaurants: {repr(new_restaurants)}")
+    print(f"New restaurants: {repr(new_restaurants)}")
     if new_restaurants:
-        slack_message = "New Restaurant(s) Found: "
+        slack_message = f"{len(new_restaurants)} new restaurants found: "
         for restaurant in new_restaurants:
             slack_message = slack_message + '"' + restaurant.get('name_kr') + '" '
         send_slack_message(slack_message)
@@ -76,27 +76,26 @@ def restaurants_transaction(crawled_meals, cursor):
 
 
 def send_deleted_menus_message(deleted_menus):
-    print(f"{len(deleted_menus)} Deleted menus found: {repr(deleted_menus)}")
+    print(f"Menus deleted: {repr(deleted_menus)}")
     if deleted_menus:
-        send_slack_message(f"{len(deleted_menus)} Deleted menus found: {repr(deleted_menus)}")
+        send_slack_message(f"{len(deleted_menus)} menus deleted: {repr(deleted_menus)}")
 
 
 def send_new_menus_message(new_menus):
-    slack_message = f"{len(new_menus)} New menus found: ["
+    slack_message = f"{len(new_menus)} new menus found: "
     for menu in new_menus:
         slack_message = slack_message + '"' + menu.get('name_kr') + '" '
-    slack_message = slack_message + ']'
     send_slack_message(slack_message)
-    print(f"{len(new_menus)} New menus found: {repr(new_menus)}")
+    print(f"New menus found: {repr(new_menus)}")
     new_menus_to_check = list(filter(lambda menu: ':' in menu.get('name_kr'), new_menus))
     if new_menus_to_check:
-        send_slack_message(f"{len(new_menus_to_check)} New menus to be checked: {repr(new_menus_to_check)}")
+        send_slack_message(f"{len(new_menus_to_check)} new menus to be checked: {repr(new_menus_to_check)}")
 
 
 def send_edited_menus_message(edited_menus):
-    print(f"{len(edited_menus)} Edited menus found: {repr(edited_menus)}")
+    print(f"Menus edited: {repr(edited_menus)}")
     if edited_menus:
-        send_slack_message(f"{len(edited_menus)} Edited menus found: {repr(edited_menus)}")
+        send_slack_message(f"{len(edited_menus)} menus edited: {repr(edited_menus)}")
 
 
 def menus_transaction(crawled_meals, cursor):
