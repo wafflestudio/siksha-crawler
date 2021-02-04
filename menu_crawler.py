@@ -162,7 +162,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
         urllib3.disable_warnings()
         if url is None:
             url = self.url
-        async with aiohttp.ClientSession(headers=self.headers) as session:
+        async with aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)) as session:
             async with session.get(url) as response:
                 html = await response.read()
                 soup = BeautifulSoup(html, 'html.parser')
@@ -339,6 +339,6 @@ def print_meals(meals):
     print('total #:', len(meals))
 
 
-#crawler = SnucoRestaurantCrawler()
+#crawler = GraduateDormRestaurantCrawler()
 #asyncio.run(crawler.run_30days())
 #print_meals(crawler.meals)

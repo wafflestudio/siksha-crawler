@@ -120,8 +120,7 @@ def crawl(event, context):
         )
         cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
 
-        #crawlers = [VetRestaurantCrawler(), GraduateDormRestaurantCrawler(), SnucoRestaurantCrawler()]
-        crawlers = [VetRestaurantCrawler(), SnucoRestaurantCrawler()]
+        crawlers = [VetRestaurantCrawler(), GraduateDormRestaurantCrawler(), SnucoRestaurantCrawler()]
         tasks = [crawler.run_30days() for crawler in crawlers]
         asyncio.run(asyncio.wait(tasks))
         crawled_meals = []
