@@ -11,7 +11,7 @@ import aiohttp
 
 
 def text_normalizer(text, only_letters=False):
-    non_letters = [r'\s', '<', '>', r'\(', r'\)', r'\[', r'\]', ',', r'\*', '&', r'\+', '-', r'/', ':']
+    non_letters = [r'\s', '<', '>', r'\(', r'\)', r'\[', r'\]', ',', r'\*', '&', r'\+', '-', r'/', ':', '#']
     text = re.sub(r'\n|\(\)|<>', '', text).strip().strip(':')
     if only_letters:
         text = re.sub('|'.join(non_letters), '', text)
@@ -206,7 +206,7 @@ class VetRestaurantCrawler(RestaurantCrawler):
 class GraduateDormRestaurantCrawler(RestaurantCrawler):
     url = 'https://dorm.snu.ac.kr/dk_board/facility/food.php'
     restaurant = '기숙사식당'
-    normalizer_classes = [FindPrice, AddRestaurantDetail]
+    normalizer_classes = [FindPrice, FindParenthesisHash, AddRestaurantDetail]
 
     async def run_30days(self):
         date = datetime.datetime.now(timezone('Asia/Seoul')).date()

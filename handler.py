@@ -25,7 +25,7 @@ def compare_restaurants(db_restaurants, crawled_meals):
 
 def compare_menus(db_menus, crawled_meals, restaurants):
     unique_fields = ['restaurant_id', 'code', 'date', 'type']
-    detail_fields = ['price', 'etc']
+    detail_fields = ['price', 'etc', 'name_kr']
     restaurant_dict = {restaurant.get('code'): restaurant.get('id') for restaurant in restaurants}
     crawled_menus = [meal.as_dict() for meal in crawled_meals]
     for menu in crawled_menus:
@@ -108,7 +108,7 @@ def menus_transaction(crawled_meals, cursor):
     restaurants = cursor.fetchall()
     today = datetime.datetime.now(timezone('Asia/Seoul')).date()
     get_menus_query = f"""
-        SELECT id, restaurant_id, code, date, type, price, etc
+        SELECT id, restaurant_id, code, date, type, price, etc, name_kr
         FROM menu
         WHERE date>='{today.isoformat()}';
     """
@@ -179,4 +179,4 @@ def crawl(event, context):
         siksha_db.close()
 
 
-#crawl(None, None)
+crawl(None, None)
