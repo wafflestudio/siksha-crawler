@@ -145,17 +145,16 @@ def menus_transaction(crawled_meals, cursor):
 
 
 def crawl(event, context):
+    siksha_db = pymysql.connect(
+        user=os.environ.get('DB_USER', 'root'),
+        passwd=os.environ.get('DB_PASSWORD', 'waffle'),
+        host=os.environ.get('DB_HOST', '127.0.0.1'),
+        db=os.environ.get('DB_NAME', 'siksha'),
+        charset='utf8'
+    )
+    cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
     try:
         print("Start crawling")
-        siksha_db = pymysql.connect(
-            user=os.environ.get('DB_USER', 'root'),
-            passwd=os.environ.get('DB_PASSWORD', 'waffle'),
-            host=os.environ.get('DB_HOST', '127.0.0.1'),
-            db=os.environ.get('DB_NAME', 'siksha'),
-            charset='utf8'
-        )
-        cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
-
         crawlers = [VetRestaurantCrawler(), GraduateDormRestaurantCrawler(), SnucoRestaurantCrawler()]
         tasks = [crawler.run_30days() for crawler in crawlers]
         asyncio.run(asyncio.wait(tasks))
@@ -175,6 +174,9 @@ def crawl(event, context):
         siksha_db.rollback()
         send_slack_message("Crawling has been failed")
         return "Crawling has been failed"
+    finally:
+        cursor.close()
+        siksha_db.close()
 
 
 #crawl(None, None)
