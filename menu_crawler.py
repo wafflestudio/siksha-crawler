@@ -13,6 +13,7 @@ import aiohttp
 def text_normalizer(text, only_letters=False):
     non_letters = [r'\s', '<', '>', r'\(', r'\)', r'\[', r'\]', ',', r'\*', '&', r'\+', '-', r'/', ':', '#']
     text = re.sub(r'\n|\(\)|<>', '', text).strip().strip(':')
+    text = re.sub(r'\xa0', ' ', text)
     if only_letters:
         text = re.sub('|'.join(non_letters), '', text)
     return text

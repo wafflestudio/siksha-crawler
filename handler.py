@@ -179,4 +179,4 @@ def crawl(event, context):
         siksha_db.close()
 
 
-crawl(None, None)
+#crawl(None, None)
