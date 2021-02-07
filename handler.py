@@ -136,7 +136,7 @@ def menus_transaction(crawled_meals, cursor):
     send_edited_menus_message(edited_menus)
     edited_menus_query = """
         UPDATE menu
-        SET price=%(price)s, etc=%(etc)s
+        SET price=%(price)s, etc=%(etc)s, name_kr=%(name_kr)s
         WHERE id=%(id)s;
     """
     cursor.executemany(edited_menus_query, edited_menus)
