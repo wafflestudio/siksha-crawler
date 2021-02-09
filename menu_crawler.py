@@ -24,7 +24,7 @@ class Meal:
     LU = 'LU'
     DN = 'DN'
     type_handler = {BR: BR, LU: LU, DN: DN, '아침': BR, '점심': LU, '저녁': DN, '중식': LU, '석식': DN}
-    not_meal = ['휴무', '휴점', '폐점', '제공', '운영']
+    not_meal = ['휴무', '휴점', '폐점', '제공', '미운영']
 
     def __init__(self, restaurant='', name='', date=None, type='', price=-1, etc=None):
         self.set_restaurant(restaurant)
