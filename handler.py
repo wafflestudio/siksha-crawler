@@ -37,17 +37,20 @@ def compare_menus(db_menus, crawled_meals, restaurants):
 
     db_not_found = [True] * len(db_menus)
     crawled_not_found = [True] * len(crawled_menus)
-    edited_menus = []
+    edited = [False] * len(db_menus)
     for db_idx in range(len(db_menus)):
         for crawled_idx in range(len(crawled_menus)):
             if all((db_menus[db_idx].get(field, None) == crawled_menus[crawled_idx].get(field)) for field in unique_fields):
                 db_not_found[db_idx] = False
                 crawled_not_found[crawled_idx] = False
-                if any((db_menus[db_idx].get(field, None) != crawled_menus[crawled_idx].get(field)) for field in detail_fields):
-                    menu = crawled_menus[crawled_idx]
-                    menu['id'] = db_menus[db_idx].get('id')
-                    edited_menus.append(menu)
-    return list(compress(crawled_menus, crawled_not_found)), list(compress(db_menus, db_not_found)), edited_menus
+                for field in detail_fields:
+                    if db_menus[db_idx].get(field, None) != crawled_menus[crawled_idx].get(field):
+                        edited[db_idx] = True
+                        db_menus[db_idx]['previous_' + field] = db_menus[db_idx].pop(field, None)
+                        db_menus[db_idx][field] = crawled_menus[crawled_idx].get(field)
+                break
+    return list(compress(crawled_menus, crawled_not_found)), list(compress(db_menus, db_not_found)), \
+           list(compress(db_menus, edited))
 
 
 def send_new_restaurants_message(new_restaurants):
