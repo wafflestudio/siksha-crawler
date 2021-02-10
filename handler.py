@@ -149,10 +149,11 @@ def menus_transaction(crawled_meals, cursor):
 
 def crawl(event, context):
     siksha_db = pymysql.connect(
-        user=os.environ.get('DB_USER', 'root'),
-        passwd=os.environ.get('DB_PASSWORD', 'waffle'),
-        host=os.environ.get('DB_HOST', '127.0.0.1'),
-        db=os.environ.get('DB_NAME', 'siksha'),
+        user='root',
+        passwd='waffle',
+        host='127.0.0.1',
+        port=7306,
+        db='siksha',
         charset='utf8'
     )
     cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
@@ -182,4 +183,5 @@ def crawl(event, context):
         siksha_db.close()
 
 
-#crawl(None, None)
+if __name__ == "__main__":
+    crawl(1, 1)
