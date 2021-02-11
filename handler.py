@@ -88,12 +88,13 @@ def send_deleted_menus_message(deleted_menus):
 def send_new_menus_message(new_menus):
     slack_message = f"{len(new_menus)} new menus found: "
     for menu in new_menus:
-        slack_message = slack_message + '"' + menu.get('name_kr') + '" '
+        name_kr = menu.get('name_kr')
+        if ':' in name_kr:
+            slack_message = slack_message + '*"' + menu.get('name_kr') + '"* '
+        else:
+            slack_message = slack_message + '"' + menu.get('name_kr') + '" '
     send_slack_message(slack_message)
     print(f"New menus found: {repr(new_menus)}")
-    new_menus_to_check = list(filter(lambda menu: ':' in menu.get('name_kr'), new_menus))
-    if new_menus_to_check:
-        send_slack_message(f"{len(new_menus_to_check)} new menus to be checked: {repr(new_menus_to_check)}")
 
 
 def send_edited_menus_message(edited_menus):
