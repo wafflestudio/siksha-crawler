@@ -25,7 +25,7 @@ def compare_restaurants(db_restaurants, crawled_meals):
 
 def compare_menus(db_menus, crawled_meals, restaurants):
     unique_fields = ['restaurant_id', 'code', 'date', 'type']
-    detail_fields = ['price', 'etc', 'name_kr']
+    detail_fields = ['price', 'etc']
     restaurant_dict = {restaurant.get('code'): restaurant.get('id') for restaurant in restaurants}
     crawled_menus = [meal.as_dict() for meal in crawled_meals]
     for menu in crawled_menus:
