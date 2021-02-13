@@ -26,7 +26,7 @@ class Meal:
     type_handler = {BR: BR, LU: LU, DN: DN, '아침': BR, '점심': LU, '저녁': DN, '중식': LU, '석식': DN}
     not_meal = ['휴무', '휴점', '폐점', '제공', '미운영', 'won']
 
-    def __init__(self, restaurant='', name='', date=None, type='', price=-1, etc=None):
+    def __init__(self, restaurant='', name='', date=None, type='', price=None, etc=None):
         self.set_restaurant(restaurant)
         self.set_name(name)
         self.set_date(date)
@@ -61,7 +61,7 @@ class Meal:
             self.price = price
         else:
             if not price:
-                self.price = -1
+                self.price = None
             else:
                 self.price = int(re.sub(r'\D', '', price))
 
@@ -277,7 +277,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         if not meal:
             return last_meal
         last_meal.set_name(last_meal.name + ': ' + meal.name)
-        if last_meal.price == -1:
+        if not last_meal.price:
             last_meal.set_price(meal.price)
         return last_meal
 
