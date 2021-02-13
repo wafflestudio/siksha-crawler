@@ -85,7 +85,7 @@ class Meal:
             date=self.date,
             type=self.type,
             price=self.price,
-            etc=repr(self.etc)
+            etc=json.dumps(self.etc)
         )
 
 
