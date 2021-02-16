@@ -114,8 +114,13 @@ class RemoveRestaurantNumber(MealNormalizer):
 class AddRestaurantDetail(MealNormalizer):
     def normalize(self, meal, **kwargs):
         details = kwargs.get("restaurant_detail", [])
-        if details:
-            meal.set_restaurant(meal.restaurant + '>' + '>'.join(details))
+        final_restaurants = kwargs.get("final_restaurants", [])
+        restaurant = meal.restaurant
+        for detail in details:
+            restaurant = restaurant + '>' + detail
+            if text_normalizer(detail, True) in final_restaurants:
+                break
+        meal.set_restaurant(restaurant)
         return meal
 
 
@@ -252,7 +257,7 @@ class GraduateDormRestaurantCrawler(RestaurantCrawler):
                     price = prices[menu_type[0]] if menu_type else ''
                     restaurant = self.restaurant
                     meal = Meal(restaurant, name, dates[col_idx], type, price)
-                    meal = self.normalize(meal, restaurant_detail=restaurant_detail[row_idx])
+                    meal = self.normalize(meal, restaurant_detail=restaurant_detail[row_idx], final_restaurants = ['아워홈'])
                     self.found_meal(meal)
 
 
