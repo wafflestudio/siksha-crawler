@@ -334,7 +334,10 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                                 self.found_meal(last_meal)
                                 last_meal = meal
                         else:
-                            restaurant = meal.restaurant
+                            if meal.restaurant != restaurant:
+                                meal = Meal(row_restaurant, name, date, types[col_idx])
+                                meal = self.normalize(meal)
+                                restaurant = meal.restaurant
                             self.found_meal(last_meal)
                             last_meal = None
                 if last_meal:
