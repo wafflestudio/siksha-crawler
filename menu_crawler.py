@@ -263,7 +263,7 @@ class GraduateDormRestaurantCrawler(RestaurantCrawler):
 
 class SnucoRestaurantCrawler(RestaurantCrawler):
     url = 'https://snuco.snu.ac.kr/ko/foodmenu'
-    normalizer_classes = [FindPrice, FindParenthesisHash, AddRestaurantDetail, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
+    normalizer_classes = [FindPrice, FindParenthesisHash, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
     except_restaurant_name_list = ['기숙사식당']
     next_line_keywords = ['테이크아웃', '봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴']
 
@@ -311,25 +311,30 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
         for tr in trs:
             tds = tr.select('td')
-            restaurant = tds[0].text
-            if any((except_restaurant_name in restaurant) for except_restaurant_name in self.except_restaurant_name_list):
+            row_restaurant = tds[0].text
+            if any((except_restaurant_name in row_restaurant) for except_restaurant_name in self.except_restaurant_name_list):
                 continue
             for col_idx, td in enumerate(tds[1:]):
                 ps = td.select('p')
-                restaurant_detail = []
+                restaurant = row_restaurant
                 last_meal = None
                 for p in ps:
                     for name in p.text.split('\n'):
                         meal = Meal(restaurant, name, date, types[col_idx])
-                        meal = self.normalize(meal, restaurant_detail=restaurant_detail)
+                        meal = self.normalize(meal)
 
                         if Meal.is_meal_name(meal.name):
+                            if meal.name[0] == '<':
+                                restaurant = row_restaurant
+                                meal.set_restaurant(restaurant)
+                                meal = self.normalize(meal)
                             if self.should_combine(last_meal, meal):
                                 last_meal = self.combine(last_meal, meal)
                             else:
                                 self.found_meal(last_meal)
                                 last_meal = meal
                         else:
+                            restaurant = meal.restaurant
                             self.found_meal(last_meal)
                             last_meal = None
                 if last_meal:
@@ -344,6 +349,6 @@ def print_meals(meals):
     print('total #:', len(meals))
 
 
-#crawler = GraduateDormRestaurantCrawler()
+#crawler = SnucoRestaurantCrawler()
 #asyncio.run(crawler.run_30days())
 #print_meals(crawler.meals)
