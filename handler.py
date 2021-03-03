@@ -183,4 +183,5 @@ def crawl(event, context):
         siksha_db.close()
 
 
-#crawl(None, None)
+if __name__ == "__main__":
+    crawl(None, None)

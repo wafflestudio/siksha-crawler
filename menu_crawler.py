@@ -125,7 +125,7 @@ class AddRestaurantDetail(MealNormalizer):
 
 
 class RemoveInfoFromMealName(MealNormalizer):
-    info_sign = ['※', '►', '※']
+    info_sign = ['※', '►', '※', '브레이크 타임']
     def normalize(self, meal, **kwargs):
         meal.set_name(re.sub('(' + '|'.join(self.info_sign) + ').*', '', meal.name))
         return meal
