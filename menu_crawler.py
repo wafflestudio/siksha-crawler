@@ -265,7 +265,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     url = 'https://snuco.snu.ac.kr/ko/foodmenu'
     normalizer_classes = [FindPrice, FindParenthesisHash, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
     except_restaurant_name_list = ['기숙사식당']
-    next_line_keywords = ['테이크아웃', '봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴']
+    next_line_keywords = ['테이크아웃', '봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페']
 
     def is_next_line_keyword(self, name):
         code = text_normalizer(name, True)
