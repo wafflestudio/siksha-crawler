@@ -23,6 +23,17 @@ def compare_restaurants(db_restaurants, crawled_meals):
     return new_restaurants
 
 
+def remove_duplicate(menus):
+    unique_fields = ['restaurant_id', 'code', 'date', 'type']
+    unique = [True] * len(menus)
+    for i in range(len(menus)):
+        for j in range(i):
+            if all((menus[i].get(field) == menus[j].get(field)) for field in unique_fields):
+                unique[i] = False
+                break
+    return list(compress(menus, unique))
+
+
 def compare_menus(db_menus, crawled_meals, restaurants):
     unique_fields = ['restaurant_id', 'code', 'date', 'type']
     detail_fields = ['price', 'etc']
@@ -34,6 +45,8 @@ def compare_menus(db_menus, crawled_meals, restaurants):
         name = menu.pop('name')
         menu['name_kr'] = name
         menu['code'] = text_normalizer(name, True)
+
+    crawled_menus = remove_duplicate(crawled_menus)
 
     db_not_found = [True] * len(db_menus)
     crawled_not_found = [True] * len(crawled_menus)
@@ -174,8 +187,9 @@ def crawl(event, context):
 
         send_slack_message("Crawling has been successfully done")
         return "Crawling has been successfully done"
-    except:
+    except Exception as e:
         siksha_db.rollback()
+        print(e)
         send_slack_message("Crawling has been failed")
         return "Crawling has been failed"
     finally:
