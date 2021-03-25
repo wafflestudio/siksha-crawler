@@ -141,7 +141,8 @@ class FindParenthesisHash(MealNormalizer):
 
 class FindRestaurantDetail(MealNormalizer):
     restaurant_regex = [r'(.*)\( ?(\d층.*)\)(.*)', r'(.*)\((.*식당) ?\)(.*)',
-                        r'(.*)< ?(\d층.*)>(.*)', r'(.*)<(.*식당) ?>(.*)']
+                        r'(.*)< ?(\d층.*)>(.*)', r'(.*)<(.*식당) ?>(.*)',
+                        r'(.*)<(테이크아웃)>(.*)']
 
     def normalize(self, meal, **kwargs):
         for regex in self.restaurant_regex:
@@ -265,23 +266,27 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     url = 'https://snuco.snu.ac.kr/ko/foodmenu'
     normalizer_classes = [FindPrice, FindParenthesisHash, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
     except_restaurant_name_list = ['기숙사식당']
-    next_line_keywords = ['테이크아웃', '봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페']
+    next_line_keywords = ['봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페']
+    multi_line_keywords = ['셀프코너']
 
-    def is_next_line_keyword(self, name):
-        code = text_normalizer(name, True)
+    def is_next_line_keyword(self, meal):
+        if not meal:
+            return False
+        code = text_normalizer(meal.name, True)
         return any((str == code) for str in self.next_line_keywords)
 
-    def should_combine(self, last_meal, meal):
-        if not last_meal:
+    def have_multi_line_keyword(self, meal):
+        if not meal:
             return False
-        return self.is_next_line_keyword(last_meal.name)
+        code = text_normalizer(meal.name, True)
+        return any((str in code) for str in self.multi_line_keywords)
 
-    def combine(self, last_meal, meal):
+    def combine(self, last_meal, meal, delimiter=": "):
         if not last_meal:
             return meal
         if not meal:
             return last_meal
-        last_meal.set_name(last_meal.name + ': ' + meal.name)
+        last_meal.set_name(last_meal.name + delimiter + meal.name)
         if not last_meal.price:
             last_meal.set_price(meal.price)
         return last_meal
@@ -324,12 +329,10 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                         meal = self.normalize(meal)
 
                         if Meal.is_meal_name(meal.name):
-                            if meal.name[0] == '<':
-                                restaurant = row_restaurant
-                                meal.set_restaurant(restaurant)
-                                meal = self.normalize(meal)
-                            if self.should_combine(last_meal, meal):
+                            if self.is_next_line_keyword(last_meal):
                                 last_meal = self.combine(last_meal, meal)
+                            elif self.have_multi_line_keyword(last_meal):
+                                last_meal = self.combine(last_meal, meal, "+")
                             else:
                                 self.found_meal(last_meal)
                                 last_meal = meal
