@@ -336,7 +336,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                             else:
                                 self.found_meal(last_meal)
                                 last_meal = meal
-                        else:
+                        elif not self.have_multi_line_keyword(last_meal):
                             if meal.restaurant != restaurant:
                                 meal = Meal(row_restaurant, name, date, types[col_idx])
                                 meal = self.normalize(meal)
