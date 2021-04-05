@@ -210,31 +210,52 @@ class VetRestaurantCrawler(RestaurantCrawler):
                 self.found_meal(meal)
 
 
-class GraduateDormRestaurantCrawler(RestaurantCrawler):
-    url = 'https://dorm.snu.ac.kr/dk_board/facility/food.php'
+class SnudormRestaurantCrawler(RestaurantCrawler):
+    url = 'https://snudorm.snu.ac.kr/wp-admin/admin-ajax.php'
+    menucost_url = 'https://snudorm.snu.ac.kr/food-schedule/'
     restaurant = '기숙사식당'
     normalizer_classes = [FindPrice, FindParenthesisHash, AddRestaurantDetail]
 
-    async def run_30days(self):
-        date = datetime.datetime.now(timezone('Asia/Seoul')).date()
-        tasks = [asyncio.create_task(self.run(date=date+datetime.timedelta(weeks=i))) for i in range(4)]
-        await asyncio.wait(tasks)
-
-    async def run(self, date=None, **kwawrgs):
-        if not date:
-            date = datetime.datetime.now(timezone('Asia/Seoul')).date()
-        secs = datetime.datetime.combine(date, datetime.time()) - datetime.datetime(1970, 1, 1, 9)
-        url = self.url + "?start_date2=" + str(secs.total_seconds())
-        await super().run(url)
-
-    def crawl(self, soup, **kwargs):
-        trs = soup.select('table > tbody > tr')
-        ths = soup.select('table > thead > tr > th')
-        lis = soup.select('div.menu > ul > li')
-
+    async def get_menucosts(self):
+        urllib3.disable_warnings()
+        async with aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)) as session:
+            async with session.get(self.menucost_url) as response:
+                html = await response.read()
+                soup = BeautifulSoup(html, 'html.parser')
+                lis = soup.select('div.board > ul > li')
         prices = {}
         for li in lis:
-            prices[li.attrs['class'][0]] = li.text
+            spans = li.find_all('span')
+            prices[spans[0].text] = spans[1].text
+        return prices
+
+
+    async def run_30days(self):
+        date = datetime.datetime.now(timezone('Asia/Seoul')).date()
+        menucosts = await self.get_menucosts()
+        tasks = [asyncio.create_task(self.run(date=date+datetime.timedelta(weeks=i), menucosts=menucosts)) for i in range(4)]
+        await asyncio.wait(tasks)
+
+    async def run(self, date=None, menucosts=None, **kwargs):
+        if not date:
+            date = datetime.datetime.now(timezone('Asia/Seoul')).date()
+        if not menucosts:
+            menucosts = await self.get_menucosts()
+        urllib3.disable_warnings()
+        async with aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)) as session:
+            data = {'action': 'metapresso_dorm_food_week_list', 'start_week_date': date.isoformat(), 'target_blog': '39'}
+            async with session.post(self.url, data=data) as response:
+                html = await response.read()
+                soup = BeautifulSoup(html, 'html.parser')
+                self.crawl(soup, menucosts=menucosts, **kwargs)
+
+
+    def crawl(self, soup, menucosts=None, **kwargs):
+        if not menucosts:
+            menucosts = {}
+
+        trs = soup.select('table > tbody > tr')
+        ths = soup.select('table > thead > tr > th')
         dates = [th.text for th in ths[-7:]]
         type = ''
         restaurant_detail = [[] for _ in range(len(trs))]
@@ -253,9 +274,9 @@ class GraduateDormRestaurantCrawler(RestaurantCrawler):
 
             for col_idx, td in enumerate(tds[-7:]):
                 for li in td.select('ul > li'):
-                    name = li.text
-                    menu_type = li.attrs['class']
-                    price = prices[menu_type[0]] if menu_type else ''
+                    spans = li.find_all('span')
+                    name = spans[1].text
+                    price = menucosts.get(spans[0].text)
                     restaurant = self.restaurant
                     meal = Meal(restaurant, name, dates[col_idx], type, price)
                     meal = self.normalize(meal, restaurant_detail=restaurant_detail[row_idx], final_restaurants = ['아워홈'])
@@ -355,6 +376,6 @@ def print_meals(meals):
     print('total #:', len(meals))
 
 
-#crawler = SnucoRestaurantCrawler()
+#crawler = SnudormRestaurantCrawler()
 #asyncio.run(crawler.run_30days())
 #print_meals(crawler.meals)
