@@ -261,7 +261,7 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
         restaurant_detail = [[] for _ in range(len(trs))]
 
         for row_idx, tr in enumerate(trs):
-            tds = tr.find_all('td')
+            tds = tr.select('td')
             for td in tds[:-7]:
                 rowspan = td.attrs.get('rowspan')
                 rowspan = int(rowspan[0]) if rowspan else 1
@@ -273,14 +273,16 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
                         restaurant_detail[row_idx + i].append(td.text)
 
             for col_idx, td in enumerate(tds[-7:]):
-                for li in td.select('ul > li'):
-                    spans = li.find_all('span')
-                    name = spans[1].text
-                    price = menucosts.get(spans[0].text)
-                    restaurant = self.restaurant
-                    meal = Meal(restaurant, name, dates[col_idx], type, price)
-                    meal = self.normalize(meal, restaurant_detail=restaurant_detail[row_idx], final_restaurants = ['아워홈'])
-                    self.found_meal(meal)
+                ul = td.find('ul')
+                if ul:
+                    for li in ul.find_all('li', recursive=False):
+                        spans = li.find_all('span')
+                        name = spans[1].text
+                        price = menucosts.get(spans[0].text)
+                        restaurant = self.restaurant
+                        meal = Meal(restaurant, name, dates[col_idx], type, price)
+                        meal = self.normalize(meal, restaurant_detail=restaurant_detail[row_idx], final_restaurants = ['아워홈'])
+                        self.found_meal(meal)
 
 
 class SnucoRestaurantCrawler(RestaurantCrawler):
@@ -377,5 +379,5 @@ def print_meals(meals):
 
 
 #crawler = SnudormRestaurantCrawler()
-#asyncio.run(crawler.run_30days())
+#asyncio.run(crawler.run(date = datetime.date(2021, 4, 6)))
 #print_meals(crawler.meals)
