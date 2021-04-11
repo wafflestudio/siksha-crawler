@@ -24,7 +24,7 @@ class Meal:
     LU = 'LU'
     DN = 'DN'
     type_handler = {BR: BR, LU: LU, DN: DN, '아침': BR, '점심': LU, '저녁': DN, '중식': LU, '석식': DN}
-    not_meal = ['휴무', '휴점', '폐점', '휴업', '제공', '미운영', 'won']
+    not_meal = ['휴무', '휴점', '폐점', '휴업', '제공', '미운영', 'won', '한달간']
 
     def __init__(self, restaurant='', name='', date=None, type='', price=None, etc=None):
         self.set_restaurant(restaurant)
@@ -289,8 +289,8 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     url = 'https://snuco.snu.ac.kr/ko/foodmenu'
     normalizer_classes = [FindPrice, FindParenthesisHash, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
     except_restaurant_name_list = ['기숙사식당']
-    next_line_keywords = ['봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페']
-    multi_line_keywords = ['셀프코너']
+    next_line_keywords = ['봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페', '추가코너']
+    multi_line_keywords = {'+': ['셀프코너'], ' / ': ['추가코너']}
 
     def is_next_line_keyword(self, meal):
         if not meal:
@@ -298,11 +298,14 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         code = text_normalizer(meal.name, True)
         return any((str == code) for str in self.next_line_keywords)
 
-    def have_multi_line_keyword(self, meal):
+    def get_multi_line_delimiter(self, meal):
         if not meal:
-            return False
+            return None
         code = text_normalizer(meal.name, True)
-        return any((str in code) for str in self.multi_line_keywords)
+        for delimiter, keywords in self.multi_line_keywords.items():
+            if any((str in code) for str in keywords):
+                return delimiter
+        return None
 
     def combine(self, last_meal, meal, delimiter=": "):
         if not last_meal:
@@ -354,12 +357,14 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                         if Meal.is_meal_name(meal.name):
                             if self.is_next_line_keyword(last_meal):
                                 last_meal = self.combine(last_meal, meal)
-                            elif self.have_multi_line_keyword(last_meal):
-                                last_meal = self.combine(last_meal, meal, "+")
                             else:
-                                self.found_meal(last_meal)
-                                last_meal = meal
-                        elif not self.have_multi_line_keyword(last_meal):
+                                delimiter = self.get_multi_line_delimiter(last_meal)
+                                if delimiter is not None:
+                                    last_meal = self.combine(last_meal, meal, delimiter)
+                                else:
+                                    self.found_meal(last_meal)
+                                    last_meal = meal
+                        elif self.get_multi_line_delimiter(last_meal) is None:
                             if meal.restaurant != restaurant:
                                 meal = Meal(row_restaurant, name, date, types[col_idx])
                                 meal = self.normalize(meal)
@@ -378,6 +383,6 @@ def print_meals(meals):
     print('total #:', len(meals))
 
 
-#crawler = SnudormRestaurantCrawler()
-#asyncio.run(crawler.run(date = datetime.date(2021, 4, 6)))
+#crawler = SnucoRestaurantCrawler()
+#asyncio.run(crawler.run(date = datetime.date(2021, 4, 8)))
 #print_meals(crawler.meals)
