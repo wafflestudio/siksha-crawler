@@ -6,7 +6,7 @@ from pytz import timezone
 from itertools import compress
 import asyncio
 from slack import send_slack_message
-from menu_crawler import text_normalizer, VetRestaurantCrawler, GraduateDormRestaurantCrawler, SnucoRestaurantCrawler
+from menu_crawler import text_normalizer, VetRestaurantCrawler, SnudormRestaurantCrawler, SnucoRestaurantCrawler
 
 
 def compare_restaurants(db_restaurants, crawled_meals):
@@ -172,7 +172,7 @@ def crawl(event, context):
     cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
     try:
         print("Start crawling")
-        crawlers = [VetRestaurantCrawler(), GraduateDormRestaurantCrawler(), SnucoRestaurantCrawler()]
+        crawlers = [VetRestaurantCrawler(), SnudormRestaurantCrawler(), SnucoRestaurantCrawler()]
         tasks = [crawler.run_30days() for crawler in crawlers]
         asyncio.run(asyncio.wait(tasks))
         crawled_meals = []
