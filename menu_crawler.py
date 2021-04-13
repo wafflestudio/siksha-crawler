@@ -97,7 +97,7 @@ class MealNormalizer(metaclass=ABCMeta):
 
 class FindPrice(MealNormalizer):
     def normalize(self, meal, **kwargs):
-        p = re.compile(r'[1-9]\d{0,2},?\d00원?')
+        p = re.compile(r'[1-9]\d{0,2}[,.]?\d00원?')
         m = p.search(meal.name)
         if m:
             meal.set_price(m.group())
