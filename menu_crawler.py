@@ -24,7 +24,7 @@ class Meal:
     LU = 'LU'
     DN = 'DN'
     type_handler = {BR: BR, LU: LU, DN: DN, '아침': BR, '점심': LU, '저녁': DN, '중식': LU, '석식': DN}
-    not_meal = ['휴무', '휴점', '폐점', '휴업', '제공', '미운영', 'won', '한달간']
+    not_meal = ['휴무', '휴점', '폐점', '휴업', '제공', '미운영', 'won', '한달간', '구독서비스', '월\d*회']
 
     def __init__(self, restaurant='', name='', date=None, type='', price=None, etc=None):
         self.set_restaurant(restaurant)
@@ -73,7 +73,7 @@ class Meal:
         name = text_normalizer(name, True)
         if not name:
             return False
-        return name and not any((str in name) for str in cls.not_meal)
+        return name and all(re.match('.*' + p + '.*', name) is None for p in cls.not_meal)
 
     def __str__(self):
         return f"{self.type}> {self.name} | {self.restaurant} | {self.date.isoformat()} | {self.price} | {repr(', '.join(self.etc))}"
