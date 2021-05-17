@@ -161,6 +161,11 @@ def menus_transaction(crawled_meals, cursor):
     print("Menus checked")
 
 
+async def run_crawlers(crawlers):
+    tasks = [asyncio.create_task(crawler.run_30days()) for crawler in crawlers]
+    return await asyncio.gather(*tasks, return_exceptions=True)
+
+
 def crawl(event, context):
     siksha_db = pymysql.connect(
         user=os.environ.get('DB_USER', 'root'),
@@ -173,8 +178,11 @@ def crawl(event, context):
     try:
         print("Start crawling")
         crawlers = [VetRestaurantCrawler(), SnudormRestaurantCrawler(), SnucoRestaurantCrawler()]
-        tasks = [crawler.run_30days() for crawler in crawlers]
-        asyncio.run(asyncio.wait(tasks))
+        results = asyncio.run(run_crawlers(crawlers))
+        for result in results:
+            for err in result:
+                if err is not None:
+                    raise err
         crawled_meals = []
         for crawler in crawlers:
             crawled_meals = crawled_meals + crawler.meals

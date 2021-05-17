@@ -194,7 +194,7 @@ class VetRestaurantCrawler(RestaurantCrawler):
     restaurant = '수의대식당'
 
     async def run_30days(self):
-        await self.run()
+        return await asyncio.gather(self.run(), return_exceptions=True)
 
     def crawl(self, soup, **kwargs):
         soup.div.extract()
@@ -233,8 +233,8 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
     async def run_30days(self):
         date = datetime.datetime.now(timezone('Asia/Seoul')).date()
         menucosts = await self.get_menucosts()
-        tasks = [asyncio.create_task(self.run(date=date+datetime.timedelta(weeks=i), menucosts=menucosts)) for i in range(4)]
-        await asyncio.wait(tasks)
+        tasks = [self.run(date=date+datetime.timedelta(weeks=i), menucosts=menucosts) for i in range(4)]
+        return await asyncio.gather(*tasks, return_exceptions=True)
 
     async def run(self, date=None, menucosts=None, **kwargs):
         if not date:
@@ -319,8 +319,8 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
     async def run_30days(self):
         date = datetime.datetime.now(timezone('Asia/Seoul')).date()
-        tasks = [asyncio.create_task(self.run(date=date+datetime.timedelta(days=i))) for i in range(30)]
-        await asyncio.wait(tasks)
+        tasks = [self.run(date=date+datetime.timedelta(days=i)) for i in range(30)]
+        return await asyncio.gather(*tasks, return_exceptions=True)
 
     async def run(self, date=None, **kwargs):
         if not date:
@@ -383,6 +383,6 @@ def print_meals(meals):
     print('total #:', len(meals))
 
 
-#crawler = SnucoRestaurantCrawler()
-#asyncio.run(crawler.run(date = datetime.date(2021, 4, 8)))
+#crawler = SnudormRestaurantCrawler()
+#asyncio.run(crawler.run(date = datetime.date(2021, 5, 17)))
 #print_meals(crawler.meals)
