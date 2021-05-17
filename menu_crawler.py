@@ -277,7 +277,7 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
                 if ul:
                     for li in ul.find_all('li', recursive=False):
                         spans = li.find_all('span')
-                        name = spans[1].text
+                        name = spans[-1].text
                         price = menucosts.get(spans[0].text)
                         restaurant = self.restaurant
                         meal = Meal(restaurant, name, dates[col_idx], type, price)
