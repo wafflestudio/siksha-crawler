@@ -289,14 +289,15 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     url = 'https://snuco.snu.ac.kr/ko/foodmenu'
     normalizer_classes = [FindPrice, FindParenthesisHash, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
     except_restaurant_name_list = ['기숙사식당']
-    next_line_keywords = ['봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페', '추가코너']
+    next_line_str = ['봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페', '추가코너']
+    next_line_keyword = ['지역맛집따라잡기']
     multi_line_keywords = {'+': ['셀프코너'], ' / ': ['추가코너']}
 
     def is_next_line_keyword(self, meal):
         if not meal:
             return False
         code = text_normalizer(meal.name, True)
-        return any((str == code) for str in self.next_line_keywords)
+        return any((str == code) for str in self.next_line_str) or any((str in code) for str in self.next_line_keyword)
 
     def get_multi_line_delimiter(self, meal):
         if not meal:
@@ -349,14 +350,16 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                 ps = td.select('p')
                 restaurant = row_restaurant
                 last_meal = None
+                next_line_merged = False
                 for p in ps:
                     for name in p.text.split('\n'):
                         meal = Meal(restaurant, name, date, types[col_idx])
                         meal = self.normalize(meal)
 
                         if Meal.is_meal_name(meal.name):
-                            if self.is_next_line_keyword(last_meal):
+                            if not next_line_merged and self.is_next_line_keyword(last_meal):
                                 last_meal = self.combine(last_meal, meal)
+                                next_line_merged = True
                             else:
                                 delimiter = self.get_multi_line_delimiter(last_meal)
                                 if delimiter is not None:
@@ -364,6 +367,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                                 else:
                                     self.found_meal(last_meal)
                                     last_meal = meal
+                                next_line_merged = False
                         elif self.get_multi_line_delimiter(last_meal) is None:
                             if meal.restaurant != restaurant:
                                 meal = Meal(row_restaurant, name, date, types[col_idx])
@@ -371,6 +375,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                                 restaurant = meal.restaurant
                             self.found_meal(last_meal)
                             last_meal = None
+                            next_line_merged = False
                 if last_meal:
                     self.found_meal(last_meal)
 
