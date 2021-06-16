@@ -24,7 +24,6 @@ class Meal:
     LU = 'LU'
     DN = 'DN'
     type_handler = {BR: BR, LU: LU, DN: DN, '아침': BR, '점심': LU, '저녁': DN, '중식': LU, '석식': DN}
-    not_meal = ['휴무', '휴점', '폐점', '휴업', '제공', '미운영', 'won', '한달간', '구독서비스', '월\d*회', '일반식코너']
 
     def __init__(self, restaurant='', name='', date=None, type='', price=None, etc=None):
         self.set_restaurant(restaurant)
@@ -67,13 +66,6 @@ class Meal:
 
     def set_etc(self, etc):
         self.etc = etc if etc else []
-
-    @classmethod
-    def is_meal_name(cls, name):
-        name = text_normalizer(name, True)
-        if not name:
-            return False
-        return name and all(re.match('.*' + p + '.*', name) is None for p in cls.not_meal)
 
     def __str__(self):
         return f"{self.type}> {self.name} | {self.restaurant} | {self.date.isoformat()} | {self.price} | {repr(', '.join(self.etc))}"
@@ -157,6 +149,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0'}
     url = ''
     normalizer_classes = []
+    not_meal = ['휴무', '휴점', '폐점', '휴업', '제공', '미운영', 'won', '한달간', '구독서비스', '월\d*회', '일반식코너']
 
     def __init__(self):
         self.meals = []
@@ -180,8 +173,14 @@ class RestaurantCrawler(metaclass=ABCMeta):
             meal = normalizer_cls().normalize(meal, **kwargs)
         return meal
 
+    def is_meal_name(self, name):
+        name = text_normalizer(name, True)
+        if not name:
+            return False
+        return name and all(re.match('.*' + p + '.*', name) is None for p in self.not_meal)
+
     def found_meal(self, meal):
-        if meal and Meal.is_meal_name(meal.name):
+        if meal and self.is_meal_name(meal.name):
             self.meals.append(meal)
 
     @abstractmethod
@@ -289,9 +288,13 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     url = 'https://snuco.snu.ac.kr/ko/foodmenu'
     normalizer_classes = [FindPrice, FindParenthesisHash, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
     except_restaurant_name_list = ['기숙사식당']
-    next_line_str = ['봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페', '추가코너']
-    next_line_keyword = ['지역맛집따라잡기']
+    next_line_str = ['봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페', '추가코너', '돈까스비빔면셋트']
+    next_line_keyword = ['지역맛집따라잡기', '호구셋트']
     multi_line_keywords = {'+': ['셀프코너'], ' / ': ['추가코너']}
+
+    def __init__(self):
+        super().__init__()
+        self.not_meal += ['셋트메뉴', '단품메뉴', '사이드메뉴']
 
     def is_next_line_keyword(self, meal):
         if not meal:
@@ -356,7 +359,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                         meal = Meal(restaurant, name, date, types[col_idx])
                         meal = self.normalize(meal)
 
-                        if Meal.is_meal_name(meal.name):
+                        if self.is_meal_name(meal.name):
                             if not next_line_merged and self.is_next_line_keyword(last_meal):
                                 last_meal = self.combine(last_meal, meal)
                                 next_line_merged = True
@@ -388,6 +391,6 @@ def print_meals(meals):
     print('total #:', len(meals))
 
 
-#crawler = SnudormRestaurantCrawler()
-#asyncio.run(crawler.run(date = datetime.date(2021, 5, 17)))
+#crawler = SnucoRestaurantCrawler()
+#asyncio.run(crawler.run(date=datetime.date(2021, 6, 14)))
 #print_meals(crawler.meals)
