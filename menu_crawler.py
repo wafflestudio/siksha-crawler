@@ -89,7 +89,7 @@ class MealNormalizer(metaclass=ABCMeta):
 
 class FindPrice(MealNormalizer):
     def normalize(self, meal, **kwargs):
-        p = re.compile(r'[1-9]\d{0,2}[,.]?\d00원?')
+        p = re.compile(r'[1-9]\d{0,2}[,.]?\d00\s?원?')
         m = p.search(meal.name)
         if m:
             meal.set_price(m.group())
@@ -149,7 +149,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0'}
     url = ''
     normalizer_classes = []
-    not_meal = ['휴무', '휴점', '폐점', '휴업', '제공', '미운영', 'won', '한달간', '구독서비스', '월\d*회', '일반식코너']
+    not_meal = ['휴무', '휴점', '폐점', '휴업', '제공', '운영', 'won', '한달간', '구독서비스', '월\d*회', '일반식코너']
 
     def __init__(self):
         self.meals = []
