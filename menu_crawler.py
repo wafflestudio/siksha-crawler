@@ -338,14 +338,14 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         if not table:
             return
         ths = table.select('thead > tr > th')
-        trs = table.select('tbody > tr')
+        trs = table.tbody.find_all('tr', recursive=False)
 
         types = []
         for th in ths[1:]:
             types.append(th.text)
 
         for tr in trs:
-            tds = tr.select('td')
+            tds = tr.find_all('td', recursive=False)
             row_restaurant = tds[0].text
             if any((except_restaurant_name in row_restaurant) for except_restaurant_name in self.except_restaurant_name_list):
                 continue
@@ -392,5 +392,5 @@ def print_meals(meals):
 
 
 #crawler = SnucoRestaurantCrawler()
-#asyncio.run(crawler.run(date=datetime.date(2021, 6, 14)))
+#asyncio.run(crawler.run(date=datetime.date(2021, 7, 21)))
 #print_meals(crawler.meals)
