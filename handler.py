@@ -4,8 +4,9 @@ import os
 import datetime
 from pytz import timezone
 from itertools import compress
+import asyncio
 from slack import send_slack_message
-from menu_crawler import text_normalizer, VetRestaurantCrawler, GraduateDormRestaurantCrawler, SnucoRestaurantCrawler
+from menu_crawler import text_normalizer, VetRestaurantCrawler, SnudormRestaurantCrawler, SnucoRestaurantCrawler
 
 
 def compare_restaurants(db_restaurants, crawled_meals):
@@ -22,8 +23,20 @@ def compare_restaurants(db_restaurants, crawled_meals):
     return new_restaurants
 
 
+def remove_duplicate(menus):
+    unique_fields = ['restaurant_id', 'code', 'date', 'type']
+    unique = [True] * len(menus)
+    for i in range(len(menus)):
+        for j in range(i):
+            if all((menus[i].get(field) == menus[j].get(field)) for field in unique_fields):
+                unique[i] = False
+                break
+    return list(compress(menus, unique))
+
+
 def compare_menus(db_menus, crawled_meals, restaurants):
-    fields = ['restaurant_id', 'code', 'date', 'type', 'price', 'etc']
+    unique_fields = ['restaurant_id', 'code', 'date', 'type']
+    detail_fields = ['price', 'etc']
     restaurant_dict = {restaurant.get('code'): restaurant.get('id') for restaurant in restaurants}
     crawled_menus = [meal.as_dict() for meal in crawled_meals]
     for menu in crawled_menus:
@@ -33,14 +46,33 @@ def compare_menus(db_menus, crawled_meals, restaurants):
         menu['name_kr'] = name
         menu['code'] = text_normalizer(name, True)
 
+    crawled_menus = remove_duplicate(crawled_menus)
+
     db_not_found = [True] * len(db_menus)
     crawled_not_found = [True] * len(crawled_menus)
+    edited = [False] * len(db_menus)
     for db_idx in range(len(db_menus)):
         for crawled_idx in range(len(crawled_menus)):
-            if all((db_menus[db_idx].get(field, None) == crawled_menus[crawled_idx].get(field)) for field in fields):
+            if all((db_menus[db_idx].get(field, None) == crawled_menus[crawled_idx].get(field)) for field in unique_fields):
                 db_not_found[db_idx] = False
                 crawled_not_found[crawled_idx] = False
-    return list(compress(crawled_menus, crawled_not_found)), list(compress(db_menus, db_not_found))
+                for field in detail_fields:
+                    if db_menus[db_idx].get(field, None) != crawled_menus[crawled_idx].get(field):
+                        edited[db_idx] = True
+                        db_menus[db_idx]['previous_' + field] = db_menus[db_idx].pop(field, None)
+                        db_menus[db_idx][field] = crawled_menus[crawled_idx].get(field)
+                break
+    return list(compress(crawled_menus, crawled_not_found)), list(compress(db_menus, db_not_found)), \
+           list(compress(db_menus, edited))
+
+
+def send_new_restaurants_message(new_restaurants):
+    print(f"New restaurants: {repr(new_restaurants)}")
+    if new_restaurants:
+        slack_message = f"{len(new_restaurants)} new restaurants found: "
+        for restaurant in new_restaurants:
+            slack_message = slack_message + '"' + restaurant.get('name_kr') + '" '
+        send_slack_message(slack_message)
 
 
 def restaurants_transaction(crawled_meals, cursor):
@@ -51,18 +83,37 @@ def restaurants_transaction(crawled_meals, cursor):
     cursor.execute(get_restaurants_query)
     db_restaurants = cursor.fetchall()
     new_restaurants = compare_restaurants(db_restaurants, crawled_meals)
-    print(f"New Restaurants: {repr(new_restaurants)}")
-    if new_restaurants:
-        slack_message = "New Restaurant(s) Found: "
-        for restaurant in new_restaurants:
-            slack_message = slack_message + '"' + restaurant.get('name_kr') + '" '
-        send_slack_message(slack_message)
-        insert_restaurants_query = """
-            INSERT INTO restaurant(code, name_kr)
-            VALUES (%(code)s, %(name_kr)s);
-        """
-        cursor.executemany(insert_restaurants_query, new_restaurants)
+    send_new_restaurants_message(new_restaurants)
+    insert_restaurants_query = """
+        INSERT INTO restaurant(code, name_kr)
+        VALUES (%(code)s, %(name_kr)s);
+    """
+    cursor.executemany(insert_restaurants_query, new_restaurants)
     print("Restaurants checked")
+
+
+def send_deleted_menus_message(deleted_menus):
+    print(f"Menus deleted: {repr(deleted_menus)}")
+    if deleted_menus:
+        send_slack_message(f"{len(deleted_menus)} menus deleted: {repr(deleted_menus)}")
+
+
+def send_new_menus_message(new_menus):
+    slack_message = f"{len(new_menus)} new menus found: "
+    for menu in new_menus:
+        name_kr = menu.get('name_kr')
+        if ':' in name_kr:
+            slack_message = slack_message + '*"' + menu.get('name_kr') + '"* '
+        else:
+            slack_message = slack_message + '"' + menu.get('name_kr') + '" '
+    send_slack_message(slack_message)
+    print(f"New menus found: {repr(new_menus)}")
+
+
+def send_edited_menus_message(edited_menus):
+    print(f"Menus edited: {repr(edited_menus)}")
+    if edited_menus:
+        send_slack_message(f"{len(edited_menus)} menus edited: {repr(edited_menus)}")
 
 
 def menus_transaction(crawled_meals, cursor):
@@ -74,18 +125,17 @@ def menus_transaction(crawled_meals, cursor):
     restaurants = cursor.fetchall()
     today = datetime.datetime.now(timezone('Asia/Seoul')).date()
     get_menus_query = f"""
-        SELECT id, restaurant_id, code, date, type, price, etc
+        SELECT id, restaurant_id, code, date, type, price, etc, name_kr
         FROM menu
         WHERE date>='{today.isoformat()}';
     """
     cursor.execute(get_menus_query)
     db_menus = cursor.fetchall()
 
-    new_menus, deleted_menus = compare_menus(db_menus, crawled_meals, restaurants)
+    new_menus, deleted_menus, edited_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
-    print(f"Deleted Menus: {repr(deleted_menus)}")
+    send_deleted_menus_message(deleted_menus)
     if deleted_menus:
-        send_slack_message(f"Deleted Menus: {repr(deleted_menus)}")
         deleted_menus_id = [str(menu.get('id')) for menu in deleted_menus]
         delete_menus_query = f"""
             DELETE FROM menu
@@ -93,34 +143,49 @@ def menus_transaction(crawled_meals, cursor):
         """
         cursor.execute(delete_menus_query)
 
-    print(f"New Menus: {repr(new_menus)}")
-    new_menus_to_check = list(filter(lambda menu: ':' in menu.get('name_kr'), new_menus))
-    if new_menus_to_check:
-        send_slack_message(f"New Menus to be Checked: {repr(new_menus_to_check)}")
+    send_new_menus_message(new_menus)
     insert_menus_query = """
         INSERT INTO menu(restaurant_id, code, date, type, name_kr, price, etc)
         VALUES (%(restaurant_id)s, %(code)s, %(date)s, %(type)s, %(name_kr)s, %(price)s, %(etc)s);
     """
     cursor.executemany(insert_menus_query, new_menus)
 
+    send_edited_menus_message(edited_menus)
+    edited_menus_query = """
+        UPDATE menu
+        SET price=%(price)s, etc=%(etc)s, name_kr=%(name_kr)s
+        WHERE id=%(id)s;
+    """
+    cursor.executemany(edited_menus_query, edited_menus)
+
     print("Menus checked")
 
 
-def crawl(event, context):
-    try:
-        print("start crawling")
-        siksha_db = pymysql.connect(
-            user=os.environ.get('DB_USER', 'root'),
-            passwd=os.environ.get('DB_PASSWORD', 'waffle'),
-            host=os.environ.get('DB_HOST', '127.0.0.1'),
-            db=os.environ.get('DB_NAME', 'siksha'),
-            charset='utf8'
-        )
-        cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
+async def run_crawlers(crawlers):
+    tasks = [asyncio.create_task(crawler.run_30days()) for crawler in crawlers]
+    return await asyncio.gather(*tasks, return_exceptions=True)
 
-        crawled_meals = VetRestaurantCrawler().run_30days() \
-                        + GraduateDormRestaurantCrawler().run_30days() \
-                        + SnucoRestaurantCrawler().run_30days()
+
+def crawl(event, context):
+    siksha_db = pymysql.connect(
+        user=os.environ.get('DB_USER', 'root'),
+        passwd=os.environ.get('DB_PASSWORD', 'waffle'),
+        host=os.environ.get('DB_HOST', '127.0.0.1'),
+        db=os.environ.get('DB_NAME', 'siksha'),
+        charset='utf8'
+    )
+    cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
+    try:
+        print("Start crawling")
+        crawlers = [VetRestaurantCrawler(), SnudormRestaurantCrawler(), SnucoRestaurantCrawler()]
+        results = asyncio.run(run_crawlers(crawlers))
+        for result in results:
+            for err in result:
+                if err is not None:
+                    raise err
+        crawled_meals = []
+        for crawler in crawlers:
+            crawled_meals = crawled_meals + crawler.meals
         today = datetime.datetime.now(timezone('Asia/Seoul')).date()
         crawled_meals = list(filter(lambda meal: meal.date >= today, crawled_meals))
         restaurants_transaction(crawled_meals, cursor)
@@ -130,10 +195,15 @@ def crawl(event, context):
 
         send_slack_message("Crawling has been successfully done")
         return "Crawling has been successfully done"
-    except:
+    except Exception as e:
         siksha_db.rollback()
-        send_slack_message("crawling has been failed")
-        return "crawling has been failed"
+        print(e)
+        send_slack_message("Crawling has been failed")
+        return "Crawling has been failed"
+    finally:
+        cursor.close()
+        siksha_db.close()
 
 
-#crawl(None, None)
+if __name__ == "__main__":
+    crawl(None, None)
