@@ -288,7 +288,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     url = 'https://snuco.snu.ac.kr/ko/foodmenu'
     normalizer_classes = [FindPrice, FindParenthesisHash, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
     except_restaurant_name_list = ['기숙사식당']
-    next_line_str = ['봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페', '추가코너', '돈까스비빔면셋트']
+    next_line_str = ['봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페', '추가코너', '돈까스비빔면셋트', '탄탄비빔면셋트']
     next_line_keyword = ['지역맛집따라잡기', '호구셋트']
     multi_line_keywords = {'+': ['셀프코너'], ' / ': ['추가코너']}
 
@@ -392,5 +392,5 @@ def print_meals(meals):
 
 
 #crawler = SnucoRestaurantCrawler()
-#asyncio.run(crawler.run(date=datetime.date(2021, 7, 21)))
+#asyncio.run(crawler.run(date=datetime.date(2021, 9, 15)))
 #print_meals(crawler.meals)
