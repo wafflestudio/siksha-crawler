@@ -89,10 +89,10 @@ class MealNormalizer(metaclass=ABCMeta):
 
 class FindPrice(MealNormalizer):
     def normalize(self, meal, **kwargs):
-        p = re.compile(r'[1-9]\d{0,2}[,.]?\d00\s?원?')
+        p = re.compile(r'([1-9]\d{0,2}[,.]?\d00)(.*?원)?')
         m = p.search(meal.name)
         if m:
-            meal.set_price(m.group())
+            meal.set_price(m.group(1))
             meal.set_name(p.sub('', meal.name))
         return meal
 
@@ -294,7 +294,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
     def __init__(self):
         super().__init__()
-        self.not_meal += ['셋트메뉴', '단품메뉴', '사이드메뉴']
+        self.not_meal += ['셋트메뉴', '단품메뉴', '사이드메뉴', '결제']
 
     def is_next_line_keyword(self, meal):
         if not meal:
@@ -392,5 +392,5 @@ def print_meals(meals):
 
 
 #crawler = SnucoRestaurantCrawler()
-#asyncio.run(crawler.run(date=datetime.date(2021, 9, 15)))
+#asyncio.run(crawler.run(date=datetime.date(2021, 9, 13)))
 #print_meals(crawler.meals)
