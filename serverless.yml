@@ -24,8 +24,8 @@ functions:
     environment:
       DB_HOST: siksha.caxwrw8c4qqq.ap-northeast-2.rds.amazonaws.com
       DB_NAME: siksha
-      DB_USER: admin
-      DB_PASSWORD: up57SLEWmT
+      DB_USER: siksha
+      DB_PASSWORD: p3vw1pt8vr
       SLACK_TOKEN: xoxb-6971793892-1687810242630-Cj67mtdVLv8gP9s8Qg1uEwLM
       SLACK_CHANNEL: C01L7PG8CEA
     events:
