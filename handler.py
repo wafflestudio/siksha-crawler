@@ -1,4 +1,3 @@
-import json
 import pymysql
 import os
 import datetime
