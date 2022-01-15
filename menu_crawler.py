@@ -294,7 +294,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
     def __init__(self):
         super().__init__()
-        self.not_meal += ['셋트메뉴', '단품메뉴', '사이드메뉴', '결제']
+        self.not_meal += ['셋트메뉴', '단품메뉴', '사이드메뉴', '결제', '혼잡시간']
 
     def is_next_line_keyword(self, meal):
         if not meal:
