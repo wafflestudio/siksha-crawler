@@ -167,7 +167,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0'}
     url = ''
     normalizer_classes = []
-    not_meal = ['휴무', '휴점', '폐점', '휴업', '제공', '운영', 'won', '한달간', '구독서비스', r'월\d*회', '일반식코너', '휴관']
+    not_meal = ['휴무', '휴점', '폐점', '휴업', '제공', '운영', 'won', '한달간', '구독서비스', r'월\d*회', '일반식코너', '휴관', '요일별', '문의']
 
     def __init__(self):
         self.meals = []
@@ -312,7 +312,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
     def __init__(self):
         super().__init__()
-        self.not_meal += ['셋트메뉴', '단품메뉴', '사이드메뉴', '결제', '혼잡시간']
+        self.not_meal += ['셋트메뉴', '단품메뉴', '사이드메뉴', '결제', '혼잡시간', r'말렌카케이크', '1조각홀케이크']
 
     def is_next_line_keyword(self, meal):
         if not meal:
