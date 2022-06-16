@@ -368,37 +368,51 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
             if any((except_restaurant_name in row_restaurant) for except_restaurant_name in self.except_restaurant_name_list):
                 continue
             for col_idx, td in enumerate(tds[1:]):
+                names = []
+                divs = td.select('div')
+                if len(divs) == 0:
+                    ps = td.select('p')
+                    for p in ps:
+                        names += p.text.split('\n')
+                else:
+                    for div in divs:
+                        ps = div.select('p')
+                        if len(ps) == 0:
+                            names += div.text.split('\n')
+                        else:
+                            for p in ps:
+                                names += p.text.split('\n')
+
                 ps = td.select('p')
                 restaurant = row_restaurant
                 last_meal = None
                 next_line_merged = False
-                for p in ps:
-                    for name in p.text.split('\n'):
-                        meal = Meal(restaurant, name, date, types[col_idx])
-                        meal = self.normalize(meal)
+                for name in names:
+                    meal = Meal(restaurant, name, date, types[col_idx])
+                    meal = self.normalize(meal)
 
-                        if self.is_meal_name(meal.name):
-                            if meal.restaurant == "자하연식당" and last_meal and last_meal.restaurant == "자하연식당>3층 교직원":
-                                meal.restaurant = last_meal.restaurant
-                            if not next_line_merged and self.is_next_line_keyword(last_meal):
-                                last_meal = self.combine(last_meal, meal)
-                                next_line_merged = True
+                    if self.is_meal_name(meal.name):
+                        if meal.restaurant == "자하연식당" and last_meal and last_meal.restaurant == "자하연식당>3층 교직원":
+                            meal.restaurant = last_meal.restaurant
+                        if not next_line_merged and self.is_next_line_keyword(last_meal):
+                            last_meal = self.combine(last_meal, meal)
+                            next_line_merged = True
+                        else:
+                            delimiter = self.get_multi_line_delimiter(last_meal)
+                            if delimiter is not None:
+                                last_meal = self.combine(last_meal, meal, delimiter)
                             else:
-                                delimiter = self.get_multi_line_delimiter(last_meal)
-                                if delimiter is not None:
-                                    last_meal = self.combine(last_meal, meal, delimiter)
-                                else:
-                                    self.found_meal(last_meal)
-                                    last_meal = meal
-                                next_line_merged = False
-                        elif self.get_multi_line_delimiter(last_meal) is None:
-                            if meal.restaurant != restaurant:
-                                meal = Meal(row_restaurant, name, date, types[col_idx])
-                                meal = self.normalize(meal)
-                                restaurant = meal.restaurant
-                            self.found_meal(last_meal)
-                            last_meal = None
+                                self.found_meal(last_meal)
+                                last_meal = meal
                             next_line_merged = False
+                    elif self.get_multi_line_delimiter(last_meal) is None:
+                        if meal.restaurant != restaurant:
+                            meal = Meal(row_restaurant, name, date, types[col_idx])
+                            meal = self.normalize(meal)
+                            restaurant = meal.restaurant
+                        self.found_meal(last_meal)
+                        last_meal = None
+                        next_line_merged = False
                 if last_meal:
                     self.found_meal(last_meal)
 
