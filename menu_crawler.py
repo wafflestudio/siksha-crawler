@@ -158,7 +158,7 @@ class FindRestaurantDetail(MealNormalizer):
         for regex in self.restaurant_regex:
             m = re.match(regex, meal.name)
             if m:
-                meal.set_restaurant(meal.restaurant+ '>' + m.group(2).strip())
+                meal.set_restaurant(meal.restaurant + '>' + m.group(2).strip())
                 meal.set_name(m.group(1).strip() + m.group(3).strip())
         return meal
 
@@ -378,6 +378,8 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                         meal = self.normalize(meal)
 
                         if self.is_meal_name(meal.name):
+                            if meal.restaurant == "자하연식당" and last_meal and last_meal.restaurant == "자하연식당>3층 교직원":
+                                meal.restaurant = last_meal.restaurant
                             if not next_line_merged and self.is_next_line_keyword(last_meal):
                                 last_meal = self.combine(last_meal, meal)
                                 next_line_merged = True
