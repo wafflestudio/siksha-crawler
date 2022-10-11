@@ -12,38 +12,50 @@ import aiohttp
 
 def text_normalizer(text, only_letters=False):
     non_letters = [
-        r'\s',
-        '<',
-        '>',
-        r'\(',
-        r'\)',
-        r'\[', r'\]',
-        ',',
-        r'\*',
-        '&',
-        r'\+',
-        '-',
-        r'/',
-        ':',
-        '#',
-        r'\.',
-        '♣',
-        '▷'
+        r"\s",
+        "<",
+        ">",
+        r"\(",
+        r"\)",
+        r"\[",
+        r"\]",
+        ",",
+        r"\*",
+        "&",
+        r"\+",
+        "-",
+        r"/",
+        ":",
+        "#",
+        r"\.",
+        "♣",
+        "▷",
     ]
-    text = re.sub(r'\n|\(\)|<>', '', text).strip().strip(':')
-    text = re.sub(r'\xa0', ' ', text)
+    text = re.sub(r"\n|\(\)|<>", "", text).strip().strip(":")
+    text = re.sub(r"\xa0", " ", text)
     if only_letters:
-        text = re.sub('|'.join(non_letters), '', text)
+        text = re.sub("|".join(non_letters), "", text)
     return text
 
 
 class Meal:
-    BR = 'BR'
-    LU = 'LU'
-    DN = 'DN'
-    type_handler = {BR: BR, LU: LU, DN: DN, '아침': BR, '점심': LU, '저녁': DN, '중식': LU, '석식': DN}
+    BR = "BR"
+    LU = "LU"
+    DN = "DN"
+    type_handler = {
+        BR: BR,
+        LU: LU,
+        DN: DN,
+        "아침": BR,
+        "점심": LU,
+        "저녁": DN,
+        "중식": LU,
+        "석식": DN,
+    }
 
-    def __init__(self, restaurant='', name='', date=None, type='', price=None, etc=None):
+    def __init__(
+        self, restaurant="", name="", date=None, type="", price=None, etc=None
+    ):
         self.set_restaurant(restaurant)
         self.set_name(name)
         self.set_date(date)
@@ -59,13 +71,13 @@ class Meal:
 
     def set_date(self, date=None):
         if not date:
-            now = datetime.datetime.now(timezone('Asia/Seoul'))
+            now = datetime.datetime.now(timezone("Asia/Seoul"))
             date = datetime.date.fromtimestamp(now.timestamp())
         if isinstance(date, datetime.date):
             self.date = date
         else:
-            year = datetime.datetime.now(timezone('Asia/Seoul')).year
-            nums = re.findall(r'\d{1,2}', date)
+            year = datetime.datetime.now(timezone("Asia/Seoul")).year
+            nums = re.findall(r"\d{1,2}", date)
             month = int(nums[0])
             day = int(nums[1])
             self.date = datetime.date(year, month, day)
@@ -80,7 +92,7 @@ class Meal:
             if not price:
                 self.price = None
             else:
-                self.price = int(re.sub(r'\D', '', price))
+                self.price = int(re.sub(r"\D", "", price))
 
     def set_etc(self, etc):
         self.etc = etc if etc else []
@@ -95,7 +107,7 @@ class Meal:
             date=self.date,
             type=self.type,
             price=self.price,
-            etc=json.dumps(self.etc)
+            etc=json.dumps(self.etc),
         )
 
 
@@ -107,17 +119,17 @@ class MealNormalizer(metaclass=ABCMeta):
 
 class FindPrice(MealNormalizer):
     def normalize(self, meal, **kwargs):
-        p = re.compile(r'([1-9]\d{0,2}[,.]?\d00)(.*?원)?')
+        p = re.compile(r"([1-9]\d{0,2}[,.]?\d00)(.*?원)?")
         m = p.search(meal.name)
         if m:
             meal.set_price(m.group(1))
-            meal.set_name(p.sub('', meal.name))
+            meal.set_name(p.sub("", meal.name))
         return meal
 
 
 class RemoveRestaurantNumber(MealNormalizer):
     def normalize(self, meal, **kwargs):
-        meal.set_restaurant(re.sub(r'\(\d{3}-\d{4}\)', '', meal.restaurant))
+        meal.set_restaurant(re.sub(r"\(\d{3}-\d{4}\)", "", meal.restaurant))
         return meal
 
 
@@ -127,7 +139,7 @@ class AddRestaurantDetail(MealNormalizer):
         final_restaurants = kwargs.get("final_restaurants", [])
         restaurant = meal.restaurant
         for detail in details:
-            restaurant = restaurant + '>' + detail
+            restaurant = restaurant + ">" + detail
             if text_normalizer(detail, True) in final_restaurants:
                 break
         meal.set_restaurant(restaurant)
@@ -135,39 +147,61 @@ class AddRestaurantDetail(MealNormalizer):
 
 
 class RemoveInfoFromMealName(MealNormalizer):
-    info_sign = ['※', '►', '※', '브레이크 타임']
+    info_sign = ["※", "►", "※", "브레이크 타임"]
+
     def normalize(self, meal, **kwargs):
-        meal.set_name(re.sub('(' + '|'.join(self.info_sign) + ').*', '', meal.name))
+        meal.set_name(re.sub("(" + "|".join(self.info_sign) + ").*", "", meal.name))
         return meal
 
 
 class FindParenthesisHash(MealNormalizer):
     def normalize(self, meal, **kwargs):
-        if '(#)' in meal.name:
-            meal.set_name(meal.name.replace('(#)', ''))
+        if "(#)" in meal.name:
+            meal.set_name(meal.name.replace("(#)", ""))
             meal.etc.append("No meat")
         return meal
 
 
 class FindRestaurantDetail(MealNormalizer):
-    restaurant_regex = [r'(.*)\( ?(\d층.*)\)(.*)', r'(.*)\((.*식당) ?\)(.*)',
-                        r'(.*)< ?(\d층.*)>(.*)', r'(.*)<(.*식당) ?>(.*)',
-                        r'(.*)<(테이크아웃)>(.*)']
+    restaurant_regex = [
+        r"(.*)\( ?(\d층.*)\)(.*)",
+        r"(.*)\((.*식당) ?\)(.*)",
+        r"(.*)< ?(\d층.*)>(.*)",
+        r"(.*)<(.*식당) ?>(.*)",
+        r"(.*)<(테이크아웃)>(.*)",
+    ]
 
     def normalize(self, meal, **kwargs):
         for regex in self.restaurant_regex:
             m = re.match(regex, meal.name)
             if m:
-                meal.set_restaurant(meal.restaurant + '>' + m.group(2).strip())
+                meal.set_restaurant(meal.restaurant + ">" + m.group(2).strip())
                 meal.set_name(m.group(1).strip() + m.group(3).strip())
         return meal
 
 
 class RestaurantCrawler(metaclass=ABCMeta):
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0'}
-    url = ''
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0"
+    }
+    url = ""
     normalizer_classes = []
-    not_meal = ['휴무', '휴점', '폐점', '휴업', '제공', '운영', 'won', '한달간', '구독서비스', r'월\d*회', '일반식코너', '휴관', '요일별', '문의']
+    not_meal = [
+        "휴무",
+        "휴점",
+        "폐점",
+        "휴업",
+        "제공",
+        "운영",
+        "won",
+        "한달간",
+        "구독서비스",
+        r"월\d*회",
+        "일반식코너",
+        "휴관",
+        "요일별",
+        "문의",
+    ]
 
     def __init__(self):
         self.meals = []
@@ -180,11 +214,18 @@ class RestaurantCrawler(metaclass=ABCMeta):
         urllib3.disable_warnings()
         if url is None:
             url = self.url
-        async with aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)) as session:
+        async with aiohttp.ClientSession(
+            headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)
+        ) as session:
             async with session.get(url) as response:
-                html = await response.read()
-                soup = BeautifulSoup(html, 'html.parser')
-                self.crawl(soup, **kwargs)
+                try:
+                    html = await response.read()
+                    # html = await response.text()
+                    soup = BeautifulSoup(html, "html.parser")
+                    self.crawl(soup, **kwargs)
+                except Exception as e:
+                    print(e)
+                    pass
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
@@ -195,7 +236,9 @@ class RestaurantCrawler(metaclass=ABCMeta):
         name = text_normalizer(name, True)
         if not name:
             return False
-        return name and all(re.match('.*' + p + '.*', name) is None for p in self.not_meal)
+        return name and all(
+            re.match(".*" + p + ".*", name) is None for p in self.not_meal
+        )
 
     def found_meal(self, meal):
         if meal and self.is_meal_name(meal.name):
@@ -207,80 +250,91 @@ class RestaurantCrawler(metaclass=ABCMeta):
 
 
 class VetRestaurantCrawler(RestaurantCrawler):
-    url = 'http://vet.snu.ac.kr/node/152'
-    restaurant = '수의대식당'
+    url = "http://vet.snu.ac.kr/node/152"
+    restaurant = "수의대식당"
 
     async def run_30days(self):
         return await asyncio.gather(self.run(), return_exceptions=True)
 
     def crawl(self, soup, **kwargs):
         soup.div.extract()
-        trs = soup.select('table > tbody > tr')
+        trs = soup.select("table > tbody > tr")
 
-        types = [th.text for th in trs[0].find_all('th')[1:]]
+        types = [th.text for th in trs[0].find_all("th")[1:]]
 
         for tr in trs[1:]:
             tds = tr.find_all("td")
             date = tds[0].text
             for col_idx, td in enumerate(tds[1:]):
-                meal = self.normalize(Meal(self.restaurant, td.text, date, types[col_idx]))
+                meal = self.normalize(
+                    Meal(self.restaurant, td.text, date, types[col_idx])
+                )
                 self.found_meal(meal)
 
 
 class SnudormRestaurantCrawler(RestaurantCrawler):
-    url = 'https://snudorm.snu.ac.kr/wp-admin/admin-ajax.php'
-    menucost_url = 'https://snudorm.snu.ac.kr/food-schedule/'
-    restaurant = '기숙사식당'
+    url = "https://snudorm.snu.ac.kr/wp-admin/admin-ajax.php"
+    menucost_url = "https://snudorm.snu.ac.kr/food-schedule/"
+    restaurant = "기숙사식당"
     normalizer_classes = [FindPrice, FindParenthesisHash, AddRestaurantDetail]
 
     async def get_menucosts(self):
         urllib3.disable_warnings()
-        async with aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)) as session:
+        async with aiohttp.ClientSession(
+            headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)
+        ) as session:
             async with session.get(self.menucost_url) as response:
                 html = await response.read()
-                soup = BeautifulSoup(html, 'html.parser')
-                lis = soup.select('div.board > ul > li')
+                soup = BeautifulSoup(html, "html.parser")
+                lis = soup.select("div.board > ul > li")
         prices = {}
         for li in lis:
-            spans = li.find_all('span')
+            spans = li.find_all("span")
             prices[spans[0].text] = spans[1].text
         return prices
 
-
     async def run_30days(self):
-        date = datetime.datetime.now(timezone('Asia/Seoul')).date()
+        date = datetime.datetime.now(timezone("Asia/Seoul")).date()
         menucosts = await self.get_menucosts()
-        tasks = [self.run(date=date+datetime.timedelta(weeks=i), menucosts=menucosts) for i in range(4)]
+        tasks = [
+            self.run(date=date + datetime.timedelta(weeks=i), menucosts=menucosts)
+            for i in range(4)
+        ]
         return await asyncio.gather(*tasks, return_exceptions=True)
 
     async def run(self, date=None, menucosts=None, **kwargs):
         if not date:
-            date = datetime.datetime.now(timezone('Asia/Seoul')).date()
+            date = datetime.datetime.now(timezone("Asia/Seoul")).date()
         if not menucosts:
             menucosts = await self.get_menucosts()
         urllib3.disable_warnings()
-        async with aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)) as session:
-            data = {'action': 'metapresso_dorm_food_week_list', 'start_week_date': date.isoformat(), 'target_blog': '39'}
+        async with aiohttp.ClientSession(
+            headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)
+        ) as session:
+            data = {
+                "action": "metapresso_dorm_food_week_list",
+                "start_week_date": date.isoformat(),
+                "target_blog": "39",
+            }
             async with session.post(self.url, data=data) as response:
                 html = await response.read()
-                soup = BeautifulSoup(html, 'html.parser')
+                soup = BeautifulSoup(html, "html.parser")
                 self.crawl(soup, menucosts=menucosts, **kwargs)
-
 
     def crawl(self, soup, menucosts=None, **kwargs):
         if not menucosts:
             menucosts = {}
 
-        trs = soup.select('table > tbody > tr')
-        ths = soup.select('table > thead > tr > th')
+        trs = soup.select("table > tbody > tr")
+        ths = soup.select("table > thead > tr > th")
         dates = [th.text for th in ths[-7:]]
-        type = ''
+        type = ""
         restaurant_detail = [[] for _ in range(len(trs))]
 
         for row_idx, tr in enumerate(trs):
-            tds = tr.select('td')
+            tds = tr.select("td")
             for td in tds[:-7]:
-                rowspan = td.attrs.get('rowspan')
+                rowspan = td.attrs.get("rowspan")
                 rowspan = int(rowspan[0]) if rowspan else 1
                 type_tmp = text_normalizer(td.text)
                 if type_tmp in Meal.type_handler:
@@ -290,35 +344,57 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
                         restaurant_detail[row_idx + i].append(td.text)
 
             for col_idx, td in enumerate(tds[-7:]):
-                ul = td.find('ul')
+                ul = td.find("ul")
                 if ul:
-                    for li in ul.find_all('li', recursive=False):
-                        spans = li.find_all('span')
+                    for li in ul.find_all("li", recursive=False):
+                        spans = li.find_all("span")
                         name = spans[-1].text
                         price = menucosts.get(spans[0].text)
                         restaurant = self.restaurant
                         meal = Meal(restaurant, name, dates[col_idx], type, price)
-                        meal = self.normalize(meal, restaurant_detail=restaurant_detail[row_idx], final_restaurants = ['아워홈'])
+                        meal = self.normalize(
+                            meal,
+                            restaurant_detail=restaurant_detail[row_idx],
+                            final_restaurants=["아워홈"],
+                        )
                         self.found_meal(meal)
 
 
 class SnucoRestaurantCrawler(RestaurantCrawler):
-    url = 'https://snuco.snu.ac.kr/ko/foodmenu'
-    normalizer_classes = [FindPrice, FindParenthesisHash, RemoveRestaurantNumber, FindRestaurantDetail, RemoveInfoFromMealName]
-    except_restaurant_name_list = ['기숙사식당']
-    next_line_str = ['봄', '소반', '콤비메뉴', '셀프코너', '오늘의메뉴', '채식뷔페', '추가코너', '돈까스비빔면셋트', '탄탄비빔면셋트']
-    next_line_keyword = ['지역맛집따라잡기', '호구셋트']
-    multi_line_keywords = {'+': ['셀프코너', '채식뷔페'], ' / ': ['추가코너']}
+    url = "https://snuco.snu.ac.kr/ko/foodmenu"
+    normalizer_classes = [
+        FindPrice,
+        FindParenthesisHash,
+        RemoveRestaurantNumber,
+        FindRestaurantDetail,
+        RemoveInfoFromMealName,
+    ]
+    except_restaurant_name_list = ["기숙사식당"]
+    next_line_str = [
+        "봄",
+        "소반",
+        "콤비메뉴",
+        "셀프코너",
+        "오늘의메뉴",
+        "채식뷔페",
+        "추가코너",
+        "돈까스비빔면셋트",
+        "탄탄비빔면셋트",
+    ]
+    next_line_keyword = ["지역맛집따라잡기", "호구셋트"]
+    multi_line_keywords = {"+": ["셀프코너", "채식뷔페"], " / ": ["추가코너"]}
 
     def __init__(self):
         super().__init__()
-        self.not_meal += ['셋트메뉴', '단품메뉴', '사이드메뉴', '결제', '혼잡시간', r'말렌카케이크', '1조각홀케이크']
+        self.not_meal += ["셋트메뉴", "단품메뉴", "사이드메뉴", "결제", "혼잡시간", r"말렌카케이크", "1조각홀케이크"]
 
     def is_next_line_keyword(self, meal):
         if not meal:
             return False
         code = text_normalizer(meal.name, True)
-        return any((str == code) for str in self.next_line_str) or any((str in code) for str in self.next_line_keyword)
+        return any((str == code) for str in self.next_line_str) or any(
+            (str in code) for str in self.next_line_keyword
+        )
 
     def get_multi_line_delimiter(self, meal):
         if not meal:
@@ -340,50 +416,56 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         return last_meal
 
     async def run_30days(self):
-        date = datetime.datetime.now(timezone('Asia/Seoul')).date()
-        tasks = [self.run(date=date+datetime.timedelta(days=i)) for i in range(30)]
+        date = datetime.datetime.now(timezone("Asia/Seoul")).date()
+        tasks = [self.run(date=date + datetime.timedelta(days=i)) for i in range(30)]
         return await asyncio.gather(*tasks, return_exceptions=True)
 
     async def run(self, date=None, **kwargs):
         if not date:
-            date = datetime.datetime.now(timezone('Asia/Seoul')).date()
-        url = self.url + f'?field_menu_date_value_1%5Bvalue%5D%5Bdate%5D=&field_menu_date_value%5Bvalue%5D%5Bdate%5D={date.month}%2F{date.day}%2F{date.year}'
+            date = datetime.datetime.now(timezone("Asia/Seoul")).date()
+        url = (
+            self.url
+            + f"?field_menu_date_value_1%5Bvalue%5D%5Bdate%5D=&field_menu_date_value%5Bvalue%5D%5Bdate%5D={date.month}%2F{date.day}%2F{date.year}"
+        )
         await super().run(url, date=date, **kwargs)
 
     def crawl(self, soup, **kwargs):
-        date = kwargs.get("date", datetime.datetime.now(timezone('Asia/Seoul')).date())
-        table = soup.select_one('div.view-content > table')
+        date = kwargs.get("date", datetime.datetime.now(timezone("Asia/Seoul")).date())
+        table = soup.select_one("div.view-content > table")
         if not table:
             return
-        ths = table.select('thead > tr > th')
-        trs = table.tbody.find_all('tr', recursive=False)
+        ths = table.select("thead > tr > th")
+        trs = table.tbody.find_all("tr", recursive=False)
 
         types = []
         for th in ths[1:]:
             types.append(th.text)
 
         for tr in trs:
-            tds = tr.find_all('td', recursive=False)
+            tds = tr.find_all("td", recursive=False)
             row_restaurant = tds[0].text
-            if any((except_restaurant_name in row_restaurant) for except_restaurant_name in self.except_restaurant_name_list):
+            if any(
+                (except_restaurant_name in row_restaurant)
+                for except_restaurant_name in self.except_restaurant_name_list
+            ):
                 continue
             for col_idx, td in enumerate(tds[1:]):
                 names = []
-                divs = td.select('div')
+                divs = td.select("div")
                 if len(divs) == 0:
-                    ps = td.select('p')
+                    ps = td.select("p")
                     for p in ps:
-                        names += p.text.split('\n')
+                        names += p.text.split("\n")
                 else:
                     for div in divs:
-                        ps = div.select('p')
+                        ps = div.select("p")
                         if len(ps) == 0:
-                            names += div.text.split('\n')
+                            names += div.text.split("\n")
                         else:
                             for p in ps:
-                                names += p.text.split('\n')
+                                names += p.text.split("\n")
 
-                ps = td.select('p')
+                ps = td.select("p")
                 restaurant = row_restaurant
                 last_meal = None
                 next_line_merged = False
@@ -392,9 +474,15 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                     meal = self.normalize(meal)
 
                     if self.is_meal_name(meal.name):
-                        if meal.restaurant == "자하연식당" and last_meal and last_meal.restaurant == "자하연식당>3층 교직원":
+                        if (
+                            meal.restaurant == "자하연식당"
+                            and last_meal
+                            and last_meal.restaurant == "자하연식당>3층 교직원"
+                        ):
                             meal.restaurant = last_meal.restaurant
-                        if not next_line_merged and self.is_next_line_keyword(last_meal):
+                        if not next_line_merged and self.is_next_line_keyword(
+                            last_meal
+                        ):
                             last_meal = self.combine(last_meal, meal)
                             next_line_merged = True
                         else:
@@ -418,13 +506,13 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
 
 def print_meals(meals):
-    print('[')
+    print("[")
     for meal in meals:
-        print('\t' + str(meal))
-    print(']')
-    print('total #:', len(meals))
+        print("\t" + str(meal))
+    print("]")
+    print("total #:", len(meals))
 
 
-#crawler = SnucoRestaurantCrawler()
-#asyncio.run(crawler.run(date=datetime.date(2021, 9, 13)))
-#print_meals(crawler.meals)
+# crawler = SnucoRestaurantCrawler()
+# asyncio.run(crawler.run(date=datetime.date(2021, 9, 13)))
+# print_meals(crawler.meals)
