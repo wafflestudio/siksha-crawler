@@ -13,6 +13,7 @@ from menu_crawler import (
     SnucoRestaurantCrawler,
 )
 
+import argparse
 import sys
 
 
@@ -196,14 +197,12 @@ async def run_crawlers(crawlers):
 
 def crawl_debug(**kwargs):
 
-    print(kwargs)
-    print(kwargs.get("date"))
-    print(kwargs.get("restaurant"))
-    return
+    arg_date = kwargs.get("date")
+    arg_restaurant = kwargs.get("restaurant")
 
     crawlers = [
-        # VetRestaurantCrawler(),
-        # SnudormRestaurantCrawler(),
+        VetRestaurantCrawler(),
+        SnudormRestaurantCrawler(),
         SnucoRestaurantCrawler(),
     ]
     results = asyncio.run(run_crawlers(crawlers))
@@ -214,11 +213,30 @@ def crawl_debug(**kwargs):
     crawled_meals = []
     for crawler in crawlers:
         crawled_meals = crawled_meals + crawler.meals
+
     today = datetime.datetime.now(timezone("Asia/Seoul")).date()
-    crawled_meals = list(filter(lambda meal: meal.date >= today, crawled_meals))
-    crawled_menus = [meal.as_dict() for meal in crawled_meals]
-    final = [print(m) for m in crawled_menus if "자하" in m["restaurant"].strip()]
-    # print(final)
+
+    if arg_date is not None:
+        ndate = datetime.datetime(
+            int(arg_date[:4]), int(arg_date[4:6]), int(arg_date[6:])
+        ).date()
+
+        crawled_meals = list(
+            filter(
+                lambda meal: (meal.date == ndate and arg_restaurant in meal.restaurant),
+                crawled_meals,
+            )
+        )
+
+    else:
+        crawled_meals = list(
+            filter(
+                lambda meal: (meal.date >= today and arg_restaurant in meal.restaurant),
+                crawled_meals,
+            )
+        )
+
+    crawled_menus = [print(meal.as_dict()) for meal in crawled_meals]
 
 
 def crawl(event, context):
@@ -266,8 +284,13 @@ def crawl(event, context):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) >= 2 and sys.argv[1] == "debug":
-        crawl_debug(date=sys.argv[2], restaurant=sys.argv[3])
+    # Parse args for debug
+    parser = argparse.ArgumentParser(description="debug option")
+    parser.add_argument("--restaurant", "-r", help="어떤 식당? 예시)자하연")
+    parser.add_argument("--date", "-d", help="언제? 예시)20221012")
+    args = parser.parse_args()
 
+    if args.restaurant is not None:
+        crawl_debug(restaurant=args.restaurant, date=args.date)
     else:
         crawl(None, None)

@@ -333,6 +333,7 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
 
         for row_idx, tr in enumerate(trs):
             tds = tr.select("td")
+            
             for td in tds[:-7]:
                 rowspan = td.attrs.get("rowspan")
                 rowspan = int(rowspan[0]) if rowspan else 1
