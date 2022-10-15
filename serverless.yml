@@ -7,6 +7,9 @@ provider:
   region: ap-northeast-2
   timeout: 60
   role: arn:aws:iam::405906814034:role/siksha-lambda-role
+
+  # version upgrade 필요
+  # https://www.serverless.com/framework/docs/guides/upgrading-v3
   lambdaHashingVersion: 20201221
 
 plugins:
@@ -22,12 +25,12 @@ functions:
     handler: handler.crawl
     timeout: 60
     environment:
-      DB_HOST: siksha.caxwrw8c4qqq.ap-northeast-2.rds.amazonaws.com
-      DB_NAME: siksha
-      DB_USER: siksha
-      DB_PASSWORD: p3vw1pt8vr
-      SLACK_TOKEN: xoxb-6971793892-1687810242630-Cj67mtdVLv8gP9s8Qg1uEwLM
-      SLACK_CHANNEL: C01L7PG8CEA
+      DB_HOST: ${ssm:/siksha/DB_HOST}
+      DB_NAME: ${ssm:/siksha/DB_NAME}
+      DB_USER: ${ssm:/siksha/DB_USER}
+      DB_PASSWORD: ${ssm:/siksha/DB_PASSWORD}
+      SLACK_TOKEN: ${ssm:/siksha/SLACK_TOKEN}
+      SLACK_CHANNEL: ${ssm:/siksha/SLACK_CHANNEL}
     events:
       # UTC 20:00 -> KST 05:00
       # 매일 오전 5시에 크롤링
