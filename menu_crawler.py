@@ -1,7 +1,6 @@
 from abc import *
 import re
 import datetime
-import requests
 from bs4 import BeautifulSoup
 from pytz import timezone
 import urllib3
@@ -333,7 +332,7 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
 
         for row_idx, tr in enumerate(trs):
             tds = tr.select("td")
-            
+
             for td in tds[:-7]:
                 rowspan = td.attrs.get("rowspan")
                 rowspan = int(rowspan[0]) if rowspan else 1
@@ -376,7 +375,6 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         "소반",
         "콤비메뉴",
         "셀프코너",
-        "오늘의메뉴",
         "채식뷔페",
         "추가코너",
         "돈까스비빔면셋트",
@@ -435,6 +433,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         table = soup.select_one("div.view-content > table")
         if not table:
             return
+
         ths = table.select("thead > tr > th")
         trs = table.tbody.find_all("tr", recursive=False)
 
@@ -453,32 +452,30 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
             for col_idx, td in enumerate(tds[1:]):
                 names = []
                 divs = td.select("div")
-                if len(divs) == 0:
-                    ps = td.select("p")
+                ps = td.select("p")
+                for p in ps:
+                    names += p.text.split("\n")
+                for i, div in enumerate(divs):
+                    if i == 0 or len(ps) == 0:
+                        names += div.text.split("\n")
+
+                    ps = div.select("p")
+
                     for p in ps:
                         names += p.text.split("\n")
-                else:
-                    for div in divs:
-                        ps = div.select("p")
-                        if len(ps) == 0:
-                            names += div.text.split("\n")
-                        else:
-                            for p in ps:
-                                names += p.text.split("\n")
-
                 ps = td.select("p")
                 restaurant = row_restaurant
                 last_meal = None
                 next_line_merged = False
-                for name in names:
+                filtered_names = list(filter(None, names))
+                for name in filtered_names:
                     meal = Meal(restaurant, name, date, types[col_idx])
                     meal = self.normalize(meal)
-
                     if self.is_meal_name(meal.name):
                         if (
                             meal.restaurant == "자하연식당"
                             and last_meal
-                            and last_meal.restaurant == "자하연식당>3층 교직원"
+                            and "교직" in last_meal.restaurant
                         ):
                             meal.restaurant = last_meal.restaurant
                         if not next_line_merged and self.is_next_line_keyword(
