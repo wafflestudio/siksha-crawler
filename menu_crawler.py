@@ -370,6 +370,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         RemoveInfoFromMealName,
     ]
     except_restaurant_name_list = ["기숙사식당"]
+    # except_restaurant_name_list = []
     next_line_str = [
         "봄",
         "소반",
@@ -380,8 +381,12 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         "돈까스비빔면셋트",
         "탄탄비빔면셋트",
     ]
-    next_line_keyword = ["지역맛집따라잡기", "호구셋트"]
-    multi_line_keywords = {"+": ["셀프코너", "채식뷔페"], " / ": ["추가코너"]}
+    next_line_keyword = ["지역맛집따라잡기", "호구셋트"]  # 다음 한 줄 있는 것들
+    multi_line_keywords = {"+": ["셀프코너", "채식뷔페"], " / ": ["추가코너"]}  # 다음에 여러줄 있는 것들
+    multi_line_finisher = {
+        "셀프코너": "주문식메뉴"
+    }  # multiline이 끝나는 지표. ex. 로직상 주문식 메뉴까지 append된 뒤에 확인한다. 따라서 마지막에 주문식 메뉴 따로 빼줘야함
+    multi_line_finisher_pair = {"주문식메뉴": "<주문식 메뉴>"}
 
     def __init__(self):
         super().__init__()
@@ -399,6 +404,12 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         if not meal:
             return None
         code = text_normalizer(meal.name, True)
+        for (
+            keyword,
+            finisher,
+        ) in self.multi_line_finisher.items():  # finisher 발견되면 delimiter가 없는 것 취급
+            if keyword in code and finisher in code:
+                return None
         for delimiter, keywords in self.multi_line_keywords.items():
             if any((str in code) for str in keywords):
                 return delimiter
@@ -471,6 +482,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                 for name in filtered_names:
                     meal = Meal(restaurant, name, date, types[col_idx])
                     meal = self.normalize(meal)
+                    # is_meal_name에서 normalizer도 호출한다.
                     if self.is_meal_name(meal.name):
                         if (
                             meal.restaurant == "자하연식당"
@@ -478,6 +490,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                             and "교직" in last_meal.restaurant
                         ):
                             meal.restaurant = last_meal.restaurant
+                        # 다음 한줄만 추가하는 경우
                         if not next_line_merged and self.is_next_line_keyword(
                             last_meal
                         ):
@@ -485,11 +498,25 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                             next_line_merged = True
                         else:
                             delimiter = self.get_multi_line_delimiter(last_meal)
+                            # delimiter에 해당하는 경우에는 여기 걸림
                             if delimiter is not None:
                                 last_meal = self.combine(last_meal, meal, delimiter)
-                            else:
+                            # 그래서 여기서 combine 된다.
+                            else:  # delimit 하지 않는 경우는
+                                for (
+                                    finisher_to_remove
+                                ) in self.multi_line_finisher_pair.values():
+                                    if finisher_to_remove in str(last_meal):
+                                        finisher_removed_name = last_meal.name.replace(
+                                            finisher_to_remove, ""
+                                        )
+                                        if finisher_removed_name.endswith("+"):
+                                            finisher_removed_name = (
+                                                finisher_removed_name[:-1]
+                                            )
+                                        last_meal.set_name(finisher_removed_name)
                                 self.found_meal(last_meal)
-                                last_meal = meal
+                                last_meal = meal  # 그거 자체로 메뉴다.
                             next_line_merged = False
                     elif self.get_multi_line_delimiter(last_meal) is None:
                         if meal.restaurant != restaurant:
