@@ -200,6 +200,8 @@ class RestaurantCrawler(metaclass=ABCMeta):
         "휴관",
         "요일별",
         "문의",
+        "점심",
+        "저녁",
     ]
 
     def __init__(self):
@@ -461,35 +463,27 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
             ):
                 continue
             for col_idx, td in enumerate(tds[1:]):
-                names = []
-                divs = td.select("div")
-                ps = td.select("p")
-                for p in ps:
-                    names += p.text.split("\n")
-                for i, div in enumerate(divs):
-                    if i == 0 or len(ps) == 0:
-                        names += div.text.split("\n")
-
-                    ps = div.select("p")
-
-                    for p in ps:
-                        names += p.text.split("\n")
-                ps = td.select("p")
+                # td.text에서 식단을 한번에 가져오는 것으로 변경
+                names = td.text.split("\n")
                 restaurant = row_restaurant
                 last_meal = None
                 next_line_merged = False
-                filtered_names = list(filter(None, names))
+                filtered_names = list(
+                    filter(lambda x: False if x == "\xa0" or x == "" else True, names)
+                )
                 for name in filtered_names:
                     meal = Meal(restaurant, name, date, types[col_idx])
                     meal = self.normalize(meal)
                     # is_meal_name에서 normalizer도 호출한다.
                     if self.is_meal_name(meal.name):
+                        # 교직원 식당 이름 설정을 위한 로직
                         if (
                             meal.restaurant == "자하연식당"
                             and last_meal
                             and "교직" in last_meal.restaurant
-                        ):
-                            meal.restaurant = last_meal.restaurant
+                        ) or meal.restaurant == "자하연식당>3층 교직원":
+                            meal.set_restaurant("자하연식당>3층교직메뉴")
+
                         # 다음 한줄만 추가하는 경우
                         if not next_line_merged and self.is_next_line_keyword(
                             last_meal
@@ -539,5 +533,5 @@ def print_meals(meals):
 
 
 # crawler = SnucoRestaurantCrawler()
-# asyncio.run(crawler.run(date=datetime.date(2021, 9, 13)))
+# asyncio.run(crawler.run(date=datetime.date(2022, 10, 26)))
 # print_meals(crawler.meals)
