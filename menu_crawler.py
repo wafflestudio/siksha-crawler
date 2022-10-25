@@ -468,7 +468,9 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                 restaurant = row_restaurant
                 last_meal = None
                 next_line_merged = False
-                filtered_names = list(filter(None, names))
+                filtered_names = list(
+                    filter(lambda x: False if x == "\xa0" or x == "" else True, names)
+                )
                 for name in filtered_names:
                     meal = Meal(restaurant, name, date, types[col_idx])
                     meal = self.normalize(meal)
@@ -530,6 +532,6 @@ def print_meals(meals):
     print("total #:", len(meals))
 
 
-# crawler = SnucoRestaurantCrawler()
-# asyncio.run(crawler.run(date=datetime.date(2021, 9, 13)))
-# print_meals(crawler.meals)
+crawler = SnucoRestaurantCrawler()
+asyncio.run(crawler.run(date=datetime.date(2022, 10, 26)))
+print_meals(crawler.meals)
