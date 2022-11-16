@@ -1,5 +1,19 @@
 # SIKSHA CRAWLER
 
+## Dev Guidelines
+
+- GitHub Flow + Issue based branch 방식을 사용합니다.
+  - GitHub Flow는 [여기](https://medium.com/@patrickporto/4-branching-workflows-for-git-30d0aaee7bf) 참고
+  - 개발이 필요한 사항은 우선 issue에 올리고, 해당 issue 번호로 branch를 만듭니다.
+  - 예시 브랜치) feat/14-crawling-debugging
+  - branch는 master에 머지 후 자동 삭제됩니다.
+- Severless deploy는 master 머지 이전에 진행되어야 합니다.
+
+  - master는 언제든 배포에 결함이 없는 상태여야 합니다.
+  - **branch에서 작업 완료 -> PR -> review가 완료 -> sls deploy -> 이상 없는지 확인 -> merge**
+
+- python formatter로 black을, linter로 pylint를 사용합니다.
+
 ## Functionality
 
 - 식당과 메뉴들에 대한 정보를 정기적으로(새벽 5시) 크롤링하고 RDS siksha DB 에 반영
