@@ -131,6 +131,12 @@ class RemoveRestaurantNumber(MealNormalizer):
         meal.set_restaurant(re.sub(r"\(\d{3}-\d{4}\)", "", meal.restaurant))
         return meal
 
+class RemoveMealNumber(MealNormalizer):
+    def normalize(self, meal, **kwargs):
+        if "①" in meal.name or "②" in meal.name:
+            meal.set_name(meal.name.replace("①", ""))
+            meal.set_name(meal.name.replace("②", ""))
+        return meal
 
 class AddRestaurantDetail(MealNormalizer):
     def normalize(self, meal, **kwargs):
@@ -155,7 +161,7 @@ class RemoveInfoFromMealName(MealNormalizer):
 
 class FindParenthesisHash(MealNormalizer):
     def normalize(self, meal, **kwargs):
-        if "(#)" in meal.name:
+        if "(#)" in meal.name or "< 채식뷔페 >:" in meal.name:
             meal.set_name(meal.name.replace("(#)", ""))
             meal.etc.append("No meat")
         return meal
@@ -202,6 +208,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
         "문의",
         "점심",
         "저녁",
+        "배식시간"
     ]
 
     def __init__(self):
@@ -370,9 +377,9 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         RemoveRestaurantNumber,
         FindRestaurantDetail,
         RemoveInfoFromMealName,
+        RemoveMealNumber
     ]
     except_restaurant_name_list = ["기숙사식당"]
-    # except_restaurant_name_list = []
     next_line_str = [
         "봄",
         "소반",
@@ -384,7 +391,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         "탄탄비빔면셋트",
     ]
     next_line_keyword = ["지역맛집따라잡기", "호구셋트"]  # 다음 한 줄 있는 것들
-    multi_line_keywords = {"+": ["셀프코너", "채식뷔페"], " / ": ["추가코너"]}  # 다음에 여러줄 있는 것들
+    multi_line_keywords = {"+": ["셀프코너", "채식뷔페", "뷔페"], " / ": ["추가코너"]}  # 다음에 여러줄 있는 것들
     multi_line_finisher = {
         "셀프코너": "주문식메뉴"
     }  # multiline이 끝나는 지표. ex. 로직상 주문식 메뉴까지 append된 뒤에 확인한다. 따라서 마지막에 주문식 메뉴 따로 빼줘야함
@@ -392,7 +399,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
     def __init__(self):
         super().__init__()
-        self.not_meal += ["셋트메뉴", "단품메뉴", "사이드메뉴", "결제", "혼잡시간", r"말렌카케이크", "1조각홀케이크"]
+        self.not_meal += ["셋트메뉴", "단품메뉴", "사이드메뉴", "결제", "혼잡시간", r"말렌카케이크", "1조각홀케이크", "식사"]
 
     def is_next_line_keyword(self, meal):
         if not meal:
@@ -533,5 +540,5 @@ def print_meals(meals):
 
 
 # crawler = SnucoRestaurantCrawler()
-# asyncio.run(crawler.run(date=datetime.date(2022, 10, 26)))
+# asyncio.run(crawler.run(date=datetime.date(2023, 5, 2)))
 # print_meals(crawler.meals)
