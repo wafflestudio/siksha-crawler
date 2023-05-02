@@ -539,6 +539,6 @@ def print_meals(meals):
     print("total #:", len(meals))
 
 
-crawler = SnucoRestaurantCrawler()
-asyncio.run(crawler.run(date=datetime.date(2023, 5, 2)))
-print_meals(crawler.meals)
+# crawler = SnucoRestaurantCrawler()
+# asyncio.run(crawler.run(date=datetime.date(2023, 5, 2)))
+# print_meals(crawler.meals)
