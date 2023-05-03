@@ -176,7 +176,6 @@ class RestaurantCrawler(metaclass=ABCMeta):
             async with session.get(url) as response:
                 try:
                     html = await response.read()
-                    # html = await response.text()
                     soup = BeautifulSoup(html, "html.parser")
                     self.crawl(soup, **kwargs)
                 except Exception as e:
@@ -211,8 +210,3 @@ def print_meals(meals):
         print("\t" + str(meal))
     print("]")
     print("total #:", len(meals))
-
-
-# crawler = SnucoRestaurantCrawler()
-# asyncio.run(crawler.run(date=datetime.date(2023, 5, 2)))
-# print_meals(crawler.meals)
