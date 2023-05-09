@@ -1,5 +1,5 @@
 import asyncio
-from base_crawler import *
+from crawlers.base_crawler import *
 
 
 class AddRestaurantDetail(MealNormalizer):
