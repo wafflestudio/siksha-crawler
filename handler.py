@@ -5,16 +5,12 @@ import datetime
 from pytz import timezone
 from itertools import compress
 import asyncio
-from slack import send_slack_message
-from menu_crawler import (
-    text_normalizer,
-    VetRestaurantCrawler,
-    SnudormRestaurantCrawler,
-    SnucoRestaurantCrawler,
-)
-
 import argparse
-import sys
+from slack import send_slack_message
+from crawlers.base_crawler import text_normalizer
+from crawlers.vet_crawler import VetRestaurantCrawler
+from crawlers.snudorm_crawler import SnudormRestaurantCrawler
+from crawlers.snuco_crawler import SnucoRestaurantCrawler
 
 
 def compare_restaurants(db_restaurants, crawled_meals):
