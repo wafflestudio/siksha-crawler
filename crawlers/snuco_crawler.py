@@ -133,6 +133,10 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         )
         await super().run(url, date=date, **kwargs)
 
+    def found_meal(self, meal):
+        if meal and self.is_meal_name(meal.name) and "교직" not in meal.name:
+            self.meals.append(meal)
+
     def crawl(self, soup, **kwargs):
         date = kwargs.get("date", datetime.datetime.now(timezone("Asia/Seoul")).date())
         table = soup.select_one("div.view-content > table")
@@ -172,7 +176,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                         if (
                             meal.restaurant == "자하연식당"
                             and last_meal
-                            and "교직" in last_meal.restaurant
+                            and ("교직" in last_meal.name or "교직" in last_meal.restaurant)
                         ) or meal.restaurant == "자하연식당>3층 교직원":
                             meal.set_restaurant("자하연식당>3층교직메뉴")
 
