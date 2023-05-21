@@ -35,3 +35,18 @@ functions:
       # UTC 20:00 -> KST 05:00
       # 매일 오전 5시에 크롤링
       - schedule: cron(0 20 * * ? *)
+  crawler-dev:
+    handler: handler.crawl
+    timeout: 60
+    environment:
+      DB_HOST: ${ssm:/siksha/DB_HOST_DEV}
+      DB_NAME: ${ssm:/siksha/DB_NAME_DEV}
+      DB_USER: ${ssm:/siksha/DB_USER_DEV}
+      DB_PASSWORD: ${ssm:/siksha/DB_PASSWORD_DEV}
+      SLACK_TOKEN: ${ssm:/siksha/SLACK_TOKEN}
+      SLACK_CHANNEL: ${ssm:/siksha/SLACK_CHANNEL}
+    events:
+      # UTC 20:00 -> KST 05:00
+      # 매일 오전 5시에 크롤링
+      - schedule: cron(0 20 * * ? *)
+
