@@ -44,7 +44,7 @@ functions:
       DB_USER: ${ssm:/siksha/DB_USER_DEV}
       DB_PASSWORD: ${ssm:/siksha/DB_PASSWORD_DEV}
       SLACK_TOKEN: ${ssm:/siksha/SLACK_TOKEN}
-      SLACK_CHANNEL: ${ssm:/siksha/SLACK_CHANNEL}
+      SLACK_CHANNEL: ${ssm:/siksha/SLACK_CHANNEL_DEV}
     events:
       # UTC 20:00 -> KST 05:00
       # 매주 월요일 오전 5시에 크롤링
