@@ -1,10 +1,10 @@
-name: Upload image to ECR PROD
+name: Upload image to ECR DEV
 on:
   push:
-    branches: ["master"]
+    branches: ["dev"]
 env:
   AWS_REGION: ap-northeast-2 # set this to your preferred AWS region, e.g. us-west-1
-  ECR_REPOSITORY_K8S: siksha-prod/siksha-crawler
+  ECR_REPOSITORY_K8S: siksha-dev/siksha-crawler
 
 permissions:
   contents: read
