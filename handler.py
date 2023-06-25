@@ -192,7 +192,6 @@ async def run_crawlers(crawlers):
 
 
 def crawl_debug(**kwargs):
-
     arg_date = kwargs.get("date")
     arg_restaurant = kwargs.get("restaurant")
 
@@ -241,6 +240,7 @@ def crawl(event, context):
         passwd=os.environ.get("DB_PASSWORD", "waffle"),
         host=os.environ.get("DB_HOST", "127.0.0.1"),
         db=os.environ.get("DB_NAME", "siksha"),
+        port=os.environ.get("DB_PORT", 3306),
         charset="utf8",
     )
     cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
@@ -279,7 +279,6 @@ def crawl(event, context):
 
 
 if __name__ == "__main__":
-
     # Parse args for debug
     parser = argparse.ArgumentParser(description="debug option")
     parser.add_argument("--restaurant", "-r", help="어떤 식당? 예시)자하연")
