@@ -1,7 +1,7 @@
 name: Upload image to ECR PROD
 on:
   push:
-    branches: ["master"]
+    branches: ["prod"]
 env:
   AWS_REGION: ap-northeast-2 # set this to your preferred AWS region, e.g. us-west-1
   ECR_REPOSITORY_K8S: siksha-prod/siksha-crawler
@@ -13,7 +13,6 @@ jobs:
   deploy:
     name: deploy prod
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
       - name: Checkout

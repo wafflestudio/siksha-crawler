@@ -11,9 +11,8 @@ permissions:
 
 jobs:
   deploy:
-    name: deploy prod
+    name: deploy dev 
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
       - name: Checkout
