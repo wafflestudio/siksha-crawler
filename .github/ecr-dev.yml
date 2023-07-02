@@ -1,0 +1,54 @@
+name: Upload image to ECR DEV
+on:
+  push:
+    branches: ["dev"]
+env:
+  AWS_REGION: ap-northeast-2 # set this to your preferred AWS region, e.g. us-west-1
+  ECR_REPOSITORY_K8S: siksha-dev/siksha-crawler
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: deploy dev 
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date '+%Y-%m-%d-%H-%M-%S')"
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: FOR K8S) Build, tag, and push image to Amazon ECR 
+        id: build-image-k8s
+        env:
+          IMAGE_TAG: ${{ github.run_number }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          # Build a docker container and
+          # push it to ECR so that it can
+          # be deployed to ECS.
+          docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY_K8S:$IMAGE_TAG . \
+                      --build-arg DB_HOST=${{ secrets.DB_HOST }}              \
+                      --build-arg DB_NAME=${{ secrets.DB_NAME_DEV }}              \
+                      --build-arg DB_USER=${{ secrets.DB_USER_DEV }}              \
+                      --build-arg DB_PASSWORD=${{ secrets.DB_PASSWORD_DEV }}      \
+                      --build-arg SLACK_TOKEN=${{ secrets.SLACK_TOKEN }}      \
+                      --build-arg SLACK_CHANNEL=${{ secrets.SLACK_CHANNEL_DEV }} 
+
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_K8S:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY_K8S:$IMAGE_TAG" >> $GITHUB_OUTPUT
