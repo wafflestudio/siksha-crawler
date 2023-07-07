@@ -240,7 +240,7 @@ def crawl(event, context):
         passwd=os.environ.get("DB_PASSWORD", "waffle"),
         host=os.environ.get("DB_HOST", "127.0.0.1"),
         db=os.environ.get("DB_NAME", "siksha"),
-        port=os.environ.get("DB_PORT", 3306),
+        port=int(os.environ.get("DB_PORT", 3306)),
         charset="utf8",
     )
     cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
