@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "siksha-crawler"
+version = "0.1.0"
+description = ""
+authors = ["Jaewan Park <jaejae1112@gmail.com>"]
+readme = "README.md"
+packages = []
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiohttp = "^3.8.4"
+beautifulsoup4 = "^4.12.2"
+chardet = "^5.1.0"
+click = "^8.1.5"
+cryptography = "^41.0.2"
+mypy-extensions = "^1.0.0"
+pathspec = "^0.11.1"
+platformdirs = "^3.8.1"
+pymysql = "^1.1.0"
+pytz = "^2023.3"
+requests = "^2.31.0"
+tomli = "^2.0.1"
+typing-extensions = "^4.7.1"
+urllib3 = "^2.0.3"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.7.0"
+pylint = "^2.17.4"
+pre-commit = "^3.3.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
