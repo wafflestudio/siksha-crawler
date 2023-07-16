@@ -13,6 +13,7 @@ jobs:
   deploy:
     name: deploy prod
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - name: Checkout
