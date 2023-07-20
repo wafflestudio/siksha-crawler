@@ -1,10 +1,20 @@
 [tool.poetry]
 name = "siksha-crawler"
 version = "0.1.0"
-description = ""
-authors = ["Jaewan Park <jaejae1112@gmail.com>"]
+description = "Siksha's Web Crawler"
+authors = [
+  "Dohyeon Kim <ladig1017@gmail.com>",
+  "Yujin Im <jina0605@gmail.com>"
+]
+maintainers = [
+  "Daeyong Jeong <iwin1203@naver.com>",
+  "Hyungwook Choi <chooi221@snu.ac.kr>",
+  "Yoonsoo Park <junepark1211@snu.ac.kr>",
+  "Youngzoo Park <enkeejuniour@snu.ac.kr>",
+  "Jaewan Park <jaejae1112@gmail.com>"
+]
 readme = "README.md"
-packages = []
+repository = "https://github.com/wafflestudio/siksha-crawler"
 
 [tool.poetry.dependencies]
 python = "^3.10"
