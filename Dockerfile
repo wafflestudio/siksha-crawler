@@ -14,8 +14,7 @@ ENV PYTHONUNBUFFERED=1 \
 # ----- builder-base ----- #
 FROM python-base AS builder-base
 
-RUN pip install --upgrade pip \
-    && pip install poetry==1.5.0
+RUN pip install --upgrade pip && pip install poetry==1.5.0
 
 WORKDIR /app
 
