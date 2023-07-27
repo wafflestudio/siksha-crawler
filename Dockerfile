@@ -6,6 +6,7 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=off \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_DEFAULT_TIMEOUT=100 \
+    PIP_ROOT_USER_ACTION=ignore \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
     POETRY_VIRTUALENVS_CREATE=1 \
     POETRY_NO_INTERACTION=1
@@ -13,7 +14,8 @@ ENV PYTHONUNBUFFERED=1 \
 # ----- builder-base ----- #
 FROM python-base AS builder-base
 
-RUN pip install poetry==1.5.0
+RUN pip install --upgrade pip \
+    && pip install poetry==1.5.0
 
 WORKDIR /app
 
