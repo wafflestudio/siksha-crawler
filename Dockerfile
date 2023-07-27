@@ -21,8 +21,7 @@ WORKDIR /app
 
 COPY poetry.lock pyproject.toml ./
 
-RUN --mount=type=cache,target=/root/.cache/poetry \
-    poetry install --without dev
+RUN poetry install --without dev
 
 # ----- runtime ----- #
 FROM python-base AS runtime
