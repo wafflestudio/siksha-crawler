@@ -19,7 +19,5 @@ class VetRestaurantCrawler(RestaurantCrawler):
             tds = tr.find_all("td")
             date = tds[0].text
             for col_idx, td in enumerate(tds[1:]):
-                meal = self.normalize(
-                    Meal(self.restaurant, td.text, date, types[col_idx])
-                )
+                meal = self.normalize(Meal(self.restaurant, td.text, date, types[col_idx]))
                 self.found_meal(meal)

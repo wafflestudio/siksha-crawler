@@ -40,20 +40,9 @@ class Meal:
     BR = "BR"
     LU = "LU"
     DN = "DN"
-    type_handler = {
-        BR: BR,
-        LU: LU,
-        DN: DN,
-        "아침": BR,
-        "점심": LU,
-        "저녁": DN,
-        "중식": LU,
-        "석식": DN,
-    }
+    type_handler = {BR: BR, LU: LU, DN: DN, "아침": BR, "점심": LU, "저녁": DN, "중식": LU, "석식": DN}
 
-    def __init__(
-        self, restaurant="", name="", date=None, type="", price=None, etc=None
-    ):
+    def __init__(self, restaurant="", name="", date=None, type="", price=None, etc=None):
         self.set_restaurant(restaurant)
         self.set_name(name)
         self.set_date(date)
@@ -134,9 +123,7 @@ class FindParenthesisHash(MealNormalizer):
 
 
 class RestaurantCrawler(metaclass=ABCMeta):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0"
-    }
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0"}
     url = ""
     normalizer_classes = []
     not_meal = [
@@ -170,9 +157,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
         urllib3.disable_warnings()
         if url is None:
             url = self.url
-        async with aiohttp.ClientSession(
-            headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)
-        ) as session:
+        async with aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)) as session:
             async with session.get(url) as response:
                 try:
                     html = await response.read()
@@ -192,9 +177,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
         name = text_normalizer(name, True)
         if not name:
             return False
-        return name and all(
-            re.match(".*" + p + ".*", name) is None for p in self.not_meal
-        )
+        return name and all(re.match(".*" + p + ".*", name) is None for p in self.not_meal)
 
     def found_meal(self, meal):
         if meal and self.is_meal_name(meal.name):

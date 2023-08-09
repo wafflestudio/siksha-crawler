@@ -23,9 +23,7 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
 
     async def get_menucosts(self):
         urllib3.disable_warnings()
-        async with aiohttp.ClientSession(
-            headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)
-        ) as session:
+        async with aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)) as session:
             async with session.get(self.menucost_url) as response:
                 html = await response.read()
                 soup = BeautifulSoup(html, "html.parser")
@@ -39,10 +37,7 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
     async def run_30days(self):
         date = datetime.datetime.now(timezone("Asia/Seoul")).date()
         menucosts = await self.get_menucosts()
-        tasks = [
-            self.run(date=date + datetime.timedelta(weeks=i), menucosts=menucosts)
-            for i in range(4)
-        ]
+        tasks = [self.run(date=date + datetime.timedelta(weeks=i), menucosts=menucosts) for i in range(4)]
         return await asyncio.gather(*tasks, return_exceptions=True)
 
     async def run(self, date=None, menucosts=None, **kwargs):
@@ -51,9 +46,7 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
         if not menucosts:
             menucosts = await self.get_menucosts()
         urllib3.disable_warnings()
-        async with aiohttp.ClientSession(
-            headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)
-        ) as session:
+        async with aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)) as session:
             data = {
                 "action": "metapresso_dorm_food_week_list",
                 "start_week_date": date.isoformat(),
@@ -97,8 +90,6 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
                         restaurant = self.restaurant
                         meal = Meal(restaurant, name, dates[col_idx], type, price)
                         meal = self.normalize(
-                            meal,
-                            restaurant_detail=restaurant_detail[row_idx],
-                            final_restaurants=["아워홈"],
+                            meal, restaurant_detail=restaurant_detail[row_idx], final_restaurants=["아워홈"]
                         )
                         self.found_meal(meal)
