@@ -21,6 +21,10 @@ GitHub Flow + Issue based branch 방식을 사용합니다.
 - [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
 - [Black](https://black.readthedocs.io/en/stable/)
 ```shell
+# Check code styles using black and pylint
+make lint
+```
+```shell
 # Format all codes using black
 black .
 ```
