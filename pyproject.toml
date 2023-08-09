@@ -33,6 +33,11 @@ tomli = "^2.0.1"
 typing-extensions = "^4.7.1"
 urllib3 = "^2.0.3"
 
+[tool.poetry.group.dev.dependencies]
+black = "^23.7.0"
+pylint = "^2.17.4"
+pre-commit = "^3.3.3"
+
 [tool.black]
 line-length = 120
 target-version = ['py310']
@@ -49,11 +54,6 @@ disable = 'C,R,I,import-error,not-callable'
 
 [tool.pylint]
 ignore=[".venv", ".git"]
-
-[tool.poetry.group.dev.dependencies]
-black = "^23.7.0"
-pylint = "^2.17.4"
-pre-commit = "^3.3.3"
 
 [build-system]
 requires = ["poetry-core"]
