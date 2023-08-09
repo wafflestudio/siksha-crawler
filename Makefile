@@ -7,9 +7,3 @@ default:
 lint:
 	black --check .
 	pylint --recursive=yes .
-
-.PHONY: crawl
-crawl:
-	python3 handler.py \
-		--restaurant $(RESTAURANT) \
-		--date $(DATE)
