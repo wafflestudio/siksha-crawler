@@ -51,3 +51,20 @@ $ python3 handler.py --restaurant {식당이름(일부)} --date 20221014
 
 - 주의) 크롤링 코드는 동일, 단순히 필터링해주는 방식임. 남용하면 서버에 부하줄 수 있음.
 - 주의) 예외처리 되어있지 않음. argument 잘못 줄 경우 에러 발생 가능성
+<<<<<<< Updated upstream
+=======
+
+### Docker Build Test
+로컬에서 빌드가 잘 되는지 테스트하고 싶다면, 아래와 같이 실행합니다. ([GitHub Workflow](.github/workflows/ecr-dev.yml) 참고)
+```shell 
+docker build -t {이미지이름} --build-arg {KEY}={VALUE} 
+```
+
+## Deployment
+
+1. dev, prod 브랜치에 push시 깃헙 액션을 통해 ECR에 이미지 푸시됩니다.
+1. ECR에 이미지 태그 변화를 aws lambda에서 감지하여 waffle-world 레포의 이미지 버전이 업데이트
+1. Kubernetes 크론잡이 정해진 스케줄에 따라 식당 크롤링을 실행합니다.
+
+- 20230815 db 이전 (maria -> mysql)
+>>>>>>> Stashed changes
