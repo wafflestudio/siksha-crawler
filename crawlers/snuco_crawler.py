@@ -1,5 +1,16 @@
 import asyncio
-from crawlers.base_crawler import *
+import datetime
+import re
+from pytz import timezone
+
+from crawlers.base_crawler import (
+    MealNormalizer,
+    RestaurantCrawler,
+    Meal,
+    text_normalizer,
+    FindPrice,
+    FindParenthesisHash,
+)
 
 
 class RemoveRestaurantNumber(MealNormalizer):
@@ -60,6 +71,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         "셀프코너": "주문식메뉴"
     }  # multiline이 끝나는 지표. ex. 로직상 주문식 메뉴까지 append된 뒤에 확인한다. 따라서 마지막에 주문식 메뉴 따로 빼줘야함
     multi_line_finisher_pair = {"주문식메뉴": "<주문식 메뉴>"}
+    jaha_faculty_keyword = set(["교직", "*3층 교직원", "3층 교직원", "3층 교직", "자하연식당>3층 교직원"])
 
     def __init__(self):
         super().__init__()
@@ -70,6 +82,26 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
             return False
         code = text_normalizer(meal.name, True)
         return any((str == code) for str in self.next_line_str) or any((str in code) for str in self.next_line_keyword)
+
+    def filter_menu_names(self, meal_names: list):
+        return [name for name in meal_names if self.is_meal_name(name)]
+
+    def filter_and_split_menu_names(self, meal_name: list):
+        names = []
+        for name in meal_name:
+            if name == "" or name == "\xa0":
+                continue
+            splitted = re.split(r"(3층 교직원|\d+\s*원)", name)
+            if len(splitted) == 1:
+                names.append(name)
+            else:
+                for i, v in enumerate(splitted):
+                    if re.match(r"\d+\s*원", v):
+                        if i - 1 >= 0:
+                            splitted[i - 1] += v
+                        splitted[i] = ""
+                names += [v for v in splitted if v != ""]
+        return names
 
     def get_multi_line_delimiter(self, meal):
         if not meal:
@@ -135,10 +167,15 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
             for col_idx, td in enumerate(tds[1:]):
                 # td.text에서 식단을 한번에 가져오는 것으로 변경
                 names = td.text.split("\n")
-                restaurant = row_restaurant
+                restaurant = text_normalizer(row_restaurant)
                 last_meal = None
                 next_line_merged = False
-                filtered_names = list(filter(lambda x: False if x == "\xa0" or x == "" else True, names))
+                filtered_names = []
+                if "자하연식당" in restaurant:
+                    filtered_names = self.filter_and_split_menu_names(names)
+                else:
+                    filtered_names = self.filter_menu_names(names)
+
                 for name in filtered_names:
                     meal = Meal(restaurant, name, date, types[col_idx])
                     meal = self.normalize(meal)
@@ -149,7 +186,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                             meal.restaurant == "자하연식당"
                             and last_meal
                             and ("교직" in last_meal.name or "교직" in last_meal.restaurant)
-                        ) or meal.restaurant == "자하연식당>3층 교직원":
+                        ) or meal.restaurant in self.jaha_faculty_keyword:
                             meal.set_restaurant("자하연식당>3층교직메뉴")
 
                         # 다음 한줄만 추가하는 경우
