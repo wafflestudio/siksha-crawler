@@ -205,11 +205,11 @@ def crawl_debug(**kwargs):
 
 def crawl(event, context):
     siksha_db = pymysql.connect(
-        user=os.environ.get("DB_USER", "root"),
+        user=os.environ.get("DB_USER", "siksha"),
         passwd=os.environ.get("DB_PASSWORD", "waffle"),
         host=os.environ.get("DB_HOST", "127.0.0.1"),
         db=os.environ.get("DB_NAME", "siksha"),
-        port=int(os.environ.get("DB_PORT", 3306)),
+        port=int(os.environ.get("DB_PORT", 7306)),
         charset="utf8",
     )
     cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
