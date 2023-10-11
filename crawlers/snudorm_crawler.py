@@ -1,5 +1,18 @@
 import asyncio
-from crawlers.base_crawler import *
+import urllib3
+import aiohttp
+from bs4 import BeautifulSoup
+import datetime
+from pytz import timezone
+
+from crawlers.base_crawler import (
+    MealNormalizer,
+    RestaurantCrawler,
+    Meal,
+    text_normalizer,
+    FindPrice,
+    FindParenthesisHash,
+)
 
 
 class AddRestaurantDetail(MealNormalizer):

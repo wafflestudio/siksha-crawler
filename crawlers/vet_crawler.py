@@ -1,5 +1,5 @@
 import asyncio
-from crawlers.base_crawler import *
+from crawlers.base_crawler import RestaurantCrawler, Meal
 
 
 class VetRestaurantCrawler(RestaurantCrawler):
