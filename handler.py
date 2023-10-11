@@ -1,4 +1,3 @@
-from distutils.debug import DEBUG
 import pymysql
 import os
 import datetime
@@ -200,7 +199,8 @@ def crawl_debug(**kwargs):
             filter(lambda meal: (meal.date >= today and arg_restaurant in meal.restaurant), crawled_meals)
         )
 
-    crawled_menus = [print(meal.as_dict()) for meal in crawled_meals]
+    for meal in crawled_meals:
+        print(meal.as_dict())
 
 
 def crawl(event, context):
