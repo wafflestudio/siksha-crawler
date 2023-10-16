@@ -69,3 +69,4 @@ docker build -t {이미지이름} --build-arg {KEY}={VALUE}
 1. dev, prod 브랜치에 push시 깃헙 액션을 통해 ECR에 이미지 푸시됩니다.
 1. ECR에 이미지 태그 변화를 aws lambda에서 감지하여 waffle-world 레포의 이미지 버전이 업데이트
 1. Kubernetes 크론잡이 정해진 스케줄에 따라 식당 크롤링을 실행합니다.
+
