@@ -1,4 +1,4 @@
-from abc import *
+from abc import ABCMeta, abstractmethod
 import re
 import datetime
 from bs4 import BeautifulSoup
@@ -150,7 +150,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
         self.meals = []
 
     @abstractmethod
-    def run_30days(self):
+    async def run_30days(self):
         pass
 
     async def run(self, url=None, **kwargs):
@@ -166,7 +166,6 @@ class RestaurantCrawler(metaclass=ABCMeta):
                     self.crawl(soup, **kwargs)
                 except Exception as e:
                     print(e)
-                    pass
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
