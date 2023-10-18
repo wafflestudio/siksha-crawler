@@ -45,10 +45,11 @@ jobs:
           # be deployed to ECS.
           docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY_K8S:$IMAGE_TAG . \
                       --build-arg DB_HOST=${{ secrets.DB_HOST_DEV }}              \
+                      --build-arg DB_PORT=${{ secrets.DB_PORT }}                  \
                       --build-arg DB_NAME=${{ secrets.DB_NAME_DEV }}              \
                       --build-arg DB_USER=${{ secrets.DB_USER_DEV }}              \
                       --build-arg DB_PASSWORD=${{ secrets.DB_PASSWORD_DEV }}      \
-                      --build-arg SLACK_TOKEN=${{ secrets.SLACK_TOKEN }}      \
+                      --build-arg SLACK_TOKEN=${{ secrets.SLACK_TOKEN }}          \
                       --build-arg SLACK_CHANNEL=${{ secrets.SLACK_CHANNEL_DEV }} 
 
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_K8S:$IMAGE_TAG

@@ -45,6 +45,7 @@ jobs:
           # be deployed to ECS.
           docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY_K8S:$IMAGE_TAG . \
                       --build-arg DB_HOST=${{ secrets.DB_HOST }}              \
+                      --build-arg DB_PORT=${{ secrets.DB_PORT }}              \
                       --build-arg DB_NAME=${{ secrets.DB_NAME }}              \
                       --build-arg DB_USER=${{ secrets.DB_USER }}              \
                       --build-arg DB_PASSWORD=${{ secrets.DB_PASSWORD }}      \
