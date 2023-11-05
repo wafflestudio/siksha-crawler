@@ -181,12 +181,9 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                     meal = self.normalize(meal)
                     # is_meal_name에서 normalizer도 호출한다.
                     if self.is_meal_name(meal.name):
-                        # 220동 이름 오류 수정
+                        # ISSUE#54 220동 이름 오류 수정
                         # ex) ㅁ 바비든든( ~ ): 덮밥류 -> 바비든든: 덮밥류
-                        # ex) (평일)08:30~19:30 -> 삭제되어야 함
                         if meal.restaurant == "220동식당":
-                            if meal.name.startswith("(평일") or meal.name.startswith("(토요일"):
-                                continue
                             name_cleaned = meal.name
                             for to_clean in ["ㅁ ", "( ~ )", "(~)"]:
                                 name_cleaned = name_cleaned.replace(to_clean, "")

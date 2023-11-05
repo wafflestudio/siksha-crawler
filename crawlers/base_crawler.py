@@ -146,6 +146,9 @@ class RestaurantCrawler(metaclass=ABCMeta):
         "점심",
         "저녁",
         "배식시간",
+        "평일",
+        "토요일",
+        "TakeOut",
     ]
 
     def __init__(self):

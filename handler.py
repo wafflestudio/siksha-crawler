@@ -224,6 +224,7 @@ def crawl(event, context):
         crawled_meals = []
         for crawler in crawlers:
             crawled_meals = crawled_meals + crawler.meals
+
         today = datetime.datetime.now(timezone("Asia/Seoul")).date()
         crawled_meals = list(filter(lambda meal: meal.date >= today, crawled_meals))
         restaurants_transaction(crawled_meals, cursor)
