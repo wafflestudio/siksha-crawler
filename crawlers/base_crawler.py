@@ -28,6 +28,8 @@ def text_normalizer(text, only_letters=False):
         r"\.",
         "♣",
         "▷",
+        "ㅁ",
+        "~",
     ]
     text = re.sub(r"\n|\(\)|<>", "", text).strip().strip(":")
     text = re.sub(r"\xa0", " ", text)
@@ -144,6 +146,9 @@ class RestaurantCrawler(metaclass=ABCMeta):
         "점심",
         "저녁",
         "배식시간",
+        "평일",
+        "토요일",
+        "TakeOut",
     ]
 
     def __init__(self):
