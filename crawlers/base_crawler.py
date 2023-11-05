@@ -28,6 +28,8 @@ def text_normalizer(text, only_letters=False):
         r"\.",
         "♣",
         "▷",
+        "ㅁ",
+        "~",
     ]
     text = re.sub(r"\n|\(\)|<>", "", text).strip().strip(":")
     text = re.sub(r"\xa0", " ", text)
