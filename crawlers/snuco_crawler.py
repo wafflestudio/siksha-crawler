@@ -181,6 +181,15 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                     meal = self.normalize(meal)
                     # is_meal_name에서 normalizer도 호출한다.
                     if self.is_meal_name(meal.name):
+                        # 220동 이름 오류 수정 ex) ㅁ 바비든든( ~ ): 덮밥류 -> 바비든든: 덮밥류
+                        if meal.restaurant == "220동식당":
+                            name_cleaned = meal.name
+                            if name_cleaned.startswith("ㅁ "):
+                                name_cleaned = name_cleaned.replace("ㅁ ", "", 1)
+                            if "( ~ )" in meal.name:
+                                name_cleaned = name_cleaned.replace("( ~ )", "")
+                            meal.set_name(name_cleaned)
+
                         # 교직원 식당 이름 설정을 위한 로직
                         if (
                             meal.restaurant == "자하연식당"
