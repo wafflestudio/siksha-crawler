@@ -98,27 +98,37 @@ def restaurants_transaction(crawled_meals, cursor):
 
 
 def send_deleted_menus_message(deleted_menus):
-    print(f"Menus deleted: {repr(deleted_menus)}")
-    if deleted_menus:
-        send_slack_message(f"{len(deleted_menus)} menus deleted: {repr(deleted_menus)}")
+    slack_message = f"{len(deleted_menus)} menus deleted: \n"
+    for i, menu in enumerate(deleted_menus):
+        slack_message = slack_message + '"' + menu.get("name_kr") + '", '
+        if i % 5 == 4:
+            slack_message = slack_message + "\n"
+
+    send_slack_message(slack_message)
+    print(f"Menus deleted: {repr(deleted_menus)})")
 
 
-def send_new_menus_message(new_menus):
-    slack_message = f"{len(new_menus)} new menus found: "
-    for menu in new_menus:
-        name_kr = menu.get("name_kr")
-        if ":" in name_kr:
-            slack_message = slack_message + '*"' + menu.get("name_kr") + '"* '
-        else:
-            slack_message = slack_message + '"' + menu.get("name_kr") + '" '
+def send_new_menus_message(new_menus: list):
+    slack_message = f"{len(new_menus)} new menus found: \n"
+    for i, menu in enumerate(new_menus):
+        slack_message = slack_message + '"' + menu.get("name_kr") + '", '
+        if i % 5 == 4:
+            slack_message = slack_message + "\n"
+
     send_slack_message(slack_message)
     print(f"New menus found: {repr(new_menus)}")
 
 
-def send_edited_menus_message(edited_menus):
+def send_edited_menus_message(edited_menus: list):
+    slack_message = f"{len(edited_menus)} menus edited: \n"
+
+    for i, menu in enumerate(edited_menus):
+        slack_message = slack_message + '"' + menu.get("name_kr") + '", '
+        if i % 5 == 4:
+            slack_message = slack_message + "\n"
+
+    send_slack_message(slack_message)
     print(f"Menus edited: {repr(edited_menus)}")
-    if edited_menus:
-        send_slack_message(f"{len(edited_menus)} menus edited: {repr(edited_menus)}")
 
 
 def menus_transaction(crawled_meals, cursor):
