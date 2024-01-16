@@ -118,8 +118,9 @@ class FindPrice(MealNormalizer):
 
 class FindParenthesisHash(MealNormalizer):
     def normalize(self, meal, **kwargs):
-        if "(#)" in meal.name or "< 채식뷔페 >:" in meal.name:
-            meal.set_name(meal.name.replace("(#)", ""))
+        # 학생회관 no-meat 메뉴 마크: (#), [#]
+        if "(#)" in meal.name or "[#]" in meal.name or "< 채식뷔페 >:" in meal.name:
+            meal.set_name(meal.name.replace("(#)", "").replace("[#]", ""))
             meal.etc.append("No meat")
         return meal
 
