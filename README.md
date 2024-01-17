@@ -15,7 +15,8 @@ GitHub Flow + Issue based branch 방식을 사용합니다.
 - GitHub Flow는 [여기](https://medium.com/@patrickporto/4-branching-workflows-for-git-30d0aaee7bf) 참고
 - 개발이 필요한 사항은 우선 issue에 올리고, 해당 issue 번호로 branch를 만듭니다.
 - 예시 브랜치) feat/14-crawling-debugging
-- new PR -> dev 브랜치로 merge -> dev 브랜치가 테스트 통과하면 prod 브랜치로 merge
+- 개별 브랜치에서 dev로 PR -> approve 받기 -> squash merge -> dev 정상 동작 확인 -> dev에서 prod로 pr -> merge commit -> prod 정상 동작 확인
+- auto delete head branch 옵션을 꺼두었습니다. 개발이 완료된 개별 브랜치는 꼭 직접 삭제해주세요.
 
 ### Code Styles
 - [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
