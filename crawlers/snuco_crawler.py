@@ -180,7 +180,6 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                     meal = Meal(restaurant, name, date, types[col_idx])
                     meal = self.normalize(meal)
 
-                    # is_meal_name에서 normalizer도 호출한다.
                     if self.is_meal_name_when_normalized(meal.name):
                         # ISSUE#54 220동 이름 오류 수정
                         # ex) ㅁ 바비든든( ~ ): 덮밥류 -> 바비든든: 덮밥류
