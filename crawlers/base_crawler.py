@@ -178,14 +178,15 @@ class RestaurantCrawler(metaclass=ABCMeta):
             meal = normalizer_cls().normalize(meal, **kwargs)
         return meal
 
-    def is_meal_name(self, name):
-        name = text_normalizer(name, True)
-        if not name:
+    def is_meal_name_when_normalized(self, name):
+        normalized_name = text_normalizer(name, True)
+        if not normalized_name:
             return False
-        return name and all(re.match(".*" + p + ".*", name) is None for p in self.not_meal)
+        is_meal_name = all(re.match(".*" + p + ".*", normalized_name) is None for p in self.not_meal)
+        return is_meal_name
 
     def found_meal(self, meal):
-        if meal and self.is_meal_name(meal.name):
+        if meal and self.is_meal_name_when_normalized(meal.name):
             self.meals.append(meal)
 
     @abstractmethod

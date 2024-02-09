@@ -84,7 +84,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         return any((str == code) for str in self.next_line_str) or any((str in code) for str in self.next_line_keyword)
 
     def filter_menu_names(self, meal_names: list):
-        return [name for name in meal_names if self.is_meal_name(name)]
+        return [name for name in meal_names if self.is_meal_name_when_normalized(name)]
 
     def filter_and_split_menu_names(self, meal_name: list):
         names = []
@@ -140,7 +140,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         await super().run(url, date=date, **kwargs)
 
     def found_meal(self, meal):
-        if meal and self.is_meal_name(meal.name) and "교직" not in meal.name:
+        if meal and self.is_meal_name_when_normalized(meal.name) and "교직" not in meal.name:
             self.meals.append(meal)
 
     def crawl(self, soup, **kwargs):
@@ -179,8 +179,9 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                 for name in filtered_names:
                     meal = Meal(restaurant, name, date, types[col_idx])
                     meal = self.normalize(meal)
+
                     # is_meal_name에서 normalizer도 호출한다.
-                    if self.is_meal_name(meal.name):
+                    if self.is_meal_name_when_normalized(meal.name):
                         # ISSUE#54 220동 이름 오류 수정
                         # ex) ㅁ 바비든든( ~ ): 덮밥류 -> 바비든든: 덮밥류
                         if meal.restaurant == "220동식당":
