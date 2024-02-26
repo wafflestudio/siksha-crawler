@@ -109,7 +109,6 @@ def menus_transaction(crawled_meals, cursor):
     """
     cursor.execute(get_menus_query)
     db_menus = cursor.fetchall()
-
     new_menus, deleted_menus, edited_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
     if deleted_menus:

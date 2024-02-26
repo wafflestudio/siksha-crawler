@@ -75,7 +75,17 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
     def __init__(self):
         super().__init__()
-        self.not_meal += ["셋트메뉴", "단품메뉴", "사이드메뉴", "결제", "혼잡시간", r"말렌카케이크", "1조각홀케이크", "식사", "메뉴", "사이드"]
+        self.not_meal += [
+            "셋트메뉴",
+            "단품메뉴",
+            "사이드메뉴",
+            "결제",
+            "혼잡시간",
+            r"말렌카케이크",
+            "1조각홀케이크",
+            "식사",
+            "사이드",
+        ]
 
     def is_next_line_keyword(self, meal):
         if not meal:
@@ -133,10 +143,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     async def run(self, date=None, **kwargs):
         if not date:
             date = datetime.datetime.now(timezone("Asia/Seoul")).date()
-        url = (
-            self.url
-            + f"?field_menu_date_value_1%5Bvalue%5D%5Bdate%5D=&field_menu_date_value%5Bvalue%5D%5Bdate%5D={date.month}%2F{date.day}%2F{date.year}"
-        )
+        url = self.url + f"?date={date.year}-{date.month:02d}-{date.day:02d}"
         await super().run(url, date=date, **kwargs)
 
     def found_meal(self, meal):
@@ -145,16 +152,10 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
     def crawl(self, soup, **kwargs):
         date = kwargs.get("date", datetime.datetime.now(timezone("Asia/Seoul")).date())
-        table = soup.select_one("div.view-content > table")
+        table = soup.find("table", {"class": "menu-table"})
         if not table:
             return
-
-        ths = table.select("thead > tr > th")
         trs = table.tbody.find_all("tr", recursive=False)
-
-        types = []
-        for th in ths[1:]:
-            types.append(th.text)
 
         for tr in trs:
             tds = tr.find_all("td", recursive=False)
@@ -164,7 +165,11 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                 for except_restaurant_name in self.except_restaurant_name_list
             ):
                 continue
+
             for col_idx, td in enumerate(tds[1:]):
+                # meal type이 더 이상 ths에 포함되지 않고 tds 내부로 이동.
+                meal_type = td["class"][0]
+
                 # td.text에서 식단을 한번에 가져오는 것으로 변경
                 names = td.text.split("\n")
                 restaurant = text_normalizer(row_restaurant)
@@ -177,7 +182,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                     filtered_names = self.filter_menu_names(names)
 
                 for name in filtered_names:
-                    meal = Meal(restaurant, name, date, types[col_idx])
+                    meal = Meal(restaurant, name, date, meal_type)
                     meal = self.normalize(meal)
 
                     if self.is_meal_name_when_normalized(meal.name):
@@ -191,16 +196,17 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
                         # 교직원 식당 이름 설정을 위한 로직
                         if (
-                            meal.restaurant == "자하연식당"
+                            (meal.restaurant == "자하연식당 3층" or "자하연식당" in meal.restaurant)
                             and last_meal
                             and ("교직" in last_meal.name or "교직" in last_meal.restaurant)
                         ) or meal.restaurant in self.jaha_faculty_keyword:
-                            meal.set_restaurant("자하연식당>3층교직메뉴")
+                            meal.set_restaurant("자하연식당 3층")
 
                         # 다음 한줄만 추가하는 경우
                         if not next_line_merged and self.is_next_line_keyword(last_meal):
                             last_meal = self.combine(last_meal, meal)
                             next_line_merged = True
+
                         else:
                             delimiter = self.get_multi_line_delimiter(last_meal)
                             # delimiter에 해당하는 경우에는 여기 걸림
@@ -219,7 +225,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                             next_line_merged = False
                     elif self.get_multi_line_delimiter(last_meal) is None:
                         if meal.restaurant != restaurant:
-                            meal = Meal(row_restaurant, name, date, types[col_idx])
+                            meal = Meal(row_restaurant, name, date, meal_type)
                             meal = self.normalize(meal)
                             restaurant = meal.restaurant
                         self.found_meal(last_meal)

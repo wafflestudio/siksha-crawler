@@ -42,7 +42,19 @@ class Meal:
     BR = "BR"
     LU = "LU"
     DN = "DN"
-    type_handler = {BR: BR, LU: LU, DN: DN, "아침": BR, "점심": LU, "저녁": DN, "중식": LU, "석식": DN}
+    type_handler = {
+        BR: BR,
+        LU: LU,
+        DN: DN,
+        "아침": BR,
+        "점심": LU,
+        "저녁": DN,
+        "중식": LU,
+        "석식": DN,
+        "breakfast": BR,
+        "lunch": LU,
+        "dinner": DN,
+    }
 
     def __init__(self, restaurant="", name="", date=None, type="", price=None, etc=None):
         self.set_restaurant(restaurant)
@@ -171,7 +183,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
                     soup = BeautifulSoup(html, "html.parser")
                     self.crawl(soup, **kwargs)
                 except Exception as e:
-                    print(e)
+                    print(f"Error in Run: {str(e)}")
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
@@ -180,7 +192,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
 
     def is_meal_name_when_normalized(self, name):
         normalized_name = text_normalizer(name, True)
-        if not normalized_name:
+        if not normalized_name or normalized_name == "메뉴":
             return False
         is_meal_name = all(re.match(".*" + p + ".*", normalized_name) is None for p in self.not_meal)
         return is_meal_name

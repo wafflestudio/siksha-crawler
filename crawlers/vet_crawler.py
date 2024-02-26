@@ -11,7 +11,7 @@ class VetRestaurantCrawler(RestaurantCrawler):
 
     def crawl(self, soup, **kwargs):
         soup.div.extract()
-        trs = soup.select("table > tbody > tr")
+        trs = soup.select("table > thead > tr")
 
         types = [th.text for th in trs[0].find_all("th")[1:]]
 
