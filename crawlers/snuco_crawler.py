@@ -84,7 +84,6 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
             r"말렌카케이크",
             "1조각홀케이크",
             "식사",
-            "메뉴",
             "사이드",
         ]
 
@@ -144,10 +143,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     async def run(self, date=None, **kwargs):
         if not date:
             date = datetime.datetime.now(timezone("Asia/Seoul")).date()
-        url = (
-            self.url
-            + f"?field_menu_date_value_1%5Bvalue%5D%5Bdate%5D=&field_menu_date_value%5Bvalue%5D%5Bdate%5D={date.month}%2F{date.day}%2F{date.year}"
-        )
+        url = self.url + f"?date={date.year}-{date.month:02d}-{date.day:02d}"
         await super().run(url, date=date, **kwargs)
 
     def found_meal(self, meal):
@@ -200,11 +196,11 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
                         # 교직원 식당 이름 설정을 위한 로직
                         if (
-                            meal.restaurant == "자하연식당"
+                            (meal.restaurant == "자하연식당 3층" or "자하연식당" in meal.restaurant)
                             and last_meal
                             and ("교직" in last_meal.name or "교직" in last_meal.restaurant)
                         ) or meal.restaurant in self.jaha_faculty_keyword:
-                            meal.set_restaurant("자하연식당>3층교직메뉴")
+                            meal.set_restaurant("자하연식당 3층")
 
                         # 다음 한줄만 추가하는 경우
                         if not next_line_merged and self.is_next_line_keyword(last_meal):

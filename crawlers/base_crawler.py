@@ -192,7 +192,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
 
     def is_meal_name_when_normalized(self, name):
         normalized_name = text_normalizer(name, True)
-        if not normalized_name:
+        if not normalized_name or normalized_name == "메뉴":
             return False
         is_meal_name = all(re.match(".*" + p + ".*", normalized_name) is None for p in self.not_meal)
         return is_meal_name
