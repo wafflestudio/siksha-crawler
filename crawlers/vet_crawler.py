@@ -3,7 +3,7 @@ from crawlers.base_crawler import RestaurantCrawler, Meal
 
 
 class VetRestaurantCrawler(RestaurantCrawler):
-    url = "http://vet.snu.ac.kr/node/152"
+    url = "https://vet.snu.ac.kr/금주의-식단/"
     restaurant = "수의대식당"
 
     async def run_30days(self):
@@ -11,7 +11,7 @@ class VetRestaurantCrawler(RestaurantCrawler):
 
     def crawl(self, soup, **kwargs):
         soup.div.extract()
-        trs = soup.select("table > tbody > tr")
+        trs = soup.select("table > thead > tr")
 
         types = [th.text for th in trs[0].find_all("th")[1:]]
 

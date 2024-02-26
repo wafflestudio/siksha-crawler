@@ -5,11 +5,17 @@ from pytz import timezone
 from itertools import compress
 import asyncio
 import argparse
-from slack import send_slack_message
 from crawlers.base_crawler import text_normalizer
 from crawlers.vet_crawler import VetRestaurantCrawler
 from crawlers.snudorm_crawler import SnudormRestaurantCrawler
 from crawlers.snuco_crawler import SnucoRestaurantCrawler
+from slack import (
+    send_new_restaurants_message,
+    send_deleted_menus_message,
+    send_new_menus_message,
+    send_edited_menus_message,
+    _send_slack_message,
+)
 
 
 def compare_restaurants(db_restaurants, crawled_meals):
@@ -71,15 +77,6 @@ def compare_menus(db_menus, crawled_meals, restaurants):
     )
 
 
-def send_new_restaurants_message(new_restaurants):
-    print(f"New restaurants: {repr(new_restaurants)}")
-    if new_restaurants:
-        slack_message = f"{len(new_restaurants)} new restaurants found: "
-        for restaurant in new_restaurants:
-            slack_message = slack_message + '"' + restaurant.get("name_kr") + '" '
-        send_slack_message(slack_message)
-
-
 def restaurants_transaction(crawled_meals, cursor):
     get_restaurants_query = """
         SELECT code
@@ -97,30 +94,6 @@ def restaurants_transaction(crawled_meals, cursor):
     print("Restaurants checked")
 
 
-def send_deleted_menus_message(deleted_menus):
-    print(f"Menus deleted: {repr(deleted_menus)}")
-    if deleted_menus:
-        send_slack_message(f"{len(deleted_menus)} menus deleted: {repr(deleted_menus)}")
-
-
-def send_new_menus_message(new_menus):
-    slack_message = f"{len(new_menus)} new menus found: "
-    for menu in new_menus:
-        name_kr = menu.get("name_kr")
-        if ":" in name_kr:
-            slack_message = slack_message + '*"' + menu.get("name_kr") + '"* '
-        else:
-            slack_message = slack_message + '"' + menu.get("name_kr") + '" '
-    send_slack_message(slack_message)
-    print(f"New menus found: {repr(new_menus)}")
-
-
-def send_edited_menus_message(edited_menus):
-    print(f"Menus edited: {repr(edited_menus)}")
-    if edited_menus:
-        send_slack_message(f"{len(edited_menus)} menus edited: {repr(edited_menus)}")
-
-
 def menus_transaction(crawled_meals, cursor):
     get_restaurants_query = """
         SELECT id, code
@@ -136,10 +109,8 @@ def menus_transaction(crawled_meals, cursor):
     """
     cursor.execute(get_menus_query)
     db_menus = cursor.fetchall()
-
     new_menus, deleted_menus, edited_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
-    send_deleted_menus_message(deleted_menus)
     if deleted_menus:
         deleted_menus_id = [str(menu.get("id")) for menu in deleted_menus]
         delete_menus_query = f"""
@@ -147,21 +118,22 @@ def menus_transaction(crawled_meals, cursor):
             WHERE id in ({','.join(deleted_menus_id)});
         """
         cursor.execute(delete_menus_query)
+    send_deleted_menus_message(deleted_menus)
 
-    send_new_menus_message(new_menus)
     insert_menus_query = """
         INSERT INTO menu(restaurant_id, code, date, type, name_kr, price, etc)
         VALUES (%(restaurant_id)s, %(code)s, %(date)s, %(type)s, %(name_kr)s, %(price)s, %(etc)s);
     """
     cursor.executemany(insert_menus_query, new_menus)
+    send_new_menus_message(new_menus)
 
-    send_edited_menus_message(edited_menus)
     edited_menus_query = """
         UPDATE menu
         SET price=%(price)s, etc=%(etc)s, name_kr=%(name_kr)s
         WHERE id=%(id)s;
     """
     cursor.executemany(edited_menus_query, edited_menus)
+    send_edited_menus_message(edited_menus)
 
     print("Menus checked")
 
@@ -232,12 +204,12 @@ def crawl(event, context):
         menus_transaction(crawled_meals, cursor)
         siksha_db.commit()
 
-        send_slack_message("Crawling has been successfully done")
+        _send_slack_message("Crawling has been successfully done")
         return "Crawling has been successfully done"
     except Exception as e:
         siksha_db.rollback()
         print(e)
-        send_slack_message("Crawling has been failed")
+        _send_slack_message("Crawling has been failed")
         return "Crawling has been failed"
     finally:
         cursor.close()
