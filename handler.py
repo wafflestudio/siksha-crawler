@@ -14,6 +14,7 @@ from slack import (
     send_deleted_menus_message,
     send_new_menus_message,
     send_edited_menus_message,
+    _send_slack_message,
 )
 
 
