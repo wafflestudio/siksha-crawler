@@ -171,7 +171,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
                     soup = BeautifulSoup(html, "html.parser")
                     self.crawl(soup, **kwargs)
                 except Exception as e:
-                    print(e)
+                    print(f"Error in Run: {str(e)}")
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
