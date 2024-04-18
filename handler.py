@@ -18,14 +18,14 @@ from slack import (
 )
 
 
-def compare_restaurants(db_restaurants, crawled_meals):
-    codes = [restaurant.get("code") for restaurant in db_restaurants]
+def compare_and_get_new_restaurants(db_restaurants, crawled_meals):
+    existing_restaurant_codes = [restaurant.get("code") for restaurant in db_restaurants]
     new_restaurants = []
     for meal in crawled_meals:
-        code = text_normalizer(meal.restaurant, True)
-        if code not in codes:
-            new_restaurants.append(dict(code=code, name_kr=meal.restaurant))
-            codes.append(code)
+        restaurant_code_from_meal = text_normalizer(meal.restaurant, True)
+        if restaurant_code_from_meal not in existing_restaurant_codes:
+            new_restaurants.append(dict(code=restaurant_code_from_meal, name_kr=meal.restaurant))
+            existing_restaurant_codes.append(restaurant_code_from_meal)
     return new_restaurants
 
 
@@ -84,7 +84,7 @@ def restaurants_transaction(crawled_meals, cursor):
     """
     cursor.execute(get_restaurants_query)
     db_restaurants = cursor.fetchall()
-    new_restaurants = compare_restaurants(db_restaurants, crawled_meals)
+    new_restaurants = compare_and_get_new_restaurants(db_restaurants, crawled_meals)
     send_new_restaurants_message(new_restaurants)
     insert_restaurants_query = """
         INSERT INTO restaurant(code, name_kr)

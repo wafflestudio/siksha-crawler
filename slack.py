@@ -3,7 +3,10 @@ import os
 
 
 def _send_slack_message(message: str):
-    body = {"channel": os.environ["SLACK_CHANNEL"], "text": message}
+    slack_token = os.environ.get("SLACK_TOKEN")
+    if not slack_token:
+        return
+    body = {"channel": slack_token, "text": message}
     headers = {"Authorization": f'Bearer {os.environ["SLACK_TOKEN"]}'}
     requests.post("https://slack.com/api/chat.postMessage", headers=headers, data=body, timeout=100)
 
