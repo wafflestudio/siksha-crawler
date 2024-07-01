@@ -13,12 +13,6 @@ from crawlers.base_crawler import (
 )
 
 
-class RemoveRestaurantNumber(MealNormalizer):
-    def normalize(self, meal, **kwargs):
-        meal.set_restaurant(re.sub(r"\(\d{3}-\d{4}\)", "", meal.restaurant))
-        return meal
-
-
 class RemoveMealNumber(MealNormalizer):
     def normalize(self, meal, **kwargs):
         if "①" in meal.name or "②" in meal.name:
@@ -58,12 +52,10 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
     normalizer_classes = [
         FindPrice,
         FindParenthesisHash,
-        RemoveRestaurantNumber,
         FindRestaurantDetail,
         RemoveInfoFromMealName,
         RemoveMealNumber,
     ]
-    except_restaurant_name_list = ["기숙사식당"]
     next_line_str = ["봄", "소반", "콤비메뉴", "셀프코너", "채식뷔페", "추가코너", "돈까스비빔면셋트", "탄탄비빔면셋트"]
     next_line_keyword = ["지역맛집따라잡기", "호구셋트"]  # 다음 한 줄 있는 것들
     multi_line_keywords = {"+": ["셀프코너", "채식뷔페", "뷔페"], " / ": ["추가코너"]}  # 다음에 여러줄 있는 것들
@@ -71,7 +63,22 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         "셀프코너": "주문식메뉴"
     }  # multiline이 끝나는 지표. ex. 로직상 주문식 메뉴까지 append된 뒤에 확인한다. 따라서 마지막에 주문식 메뉴 따로 빼줘야함
     multi_line_finisher_pair = {"주문식메뉴": "<주문식 메뉴>"}
-    jaha_faculty_keyword = set(["교직", "*3층 교직원", "3층 교직원", "3층 교직", "자하연식당>3층 교직원"])
+
+    restaurant_phone_dict = {
+        "8819072": "기숙사식당",
+        "8805543": "학생회관식당",
+        "8807888": "자하연식당>2층",
+        "8807889": "자하연식당>3층",
+        "8761006": "예술계식당",
+        "8827005": "라운지오",
+        "8809358": "두레미담",
+        "8808697": "동원관식당",
+        "8898956": "공대간이식당",
+        "8805545": "3식당",
+        "8801939": "302동식당",
+        "8898955": "301동식당",
+    }
+    except_restaurant_list = ["기숙사식당"]  # snudorm에서 처리
 
     def __init__(self):
         super().__init__()
@@ -139,6 +146,22 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         if meal and self.is_meal_name_when_normalized(meal.name) and "교직" not in meal.name:
             self.meals.append(meal)
 
+    def get_name_from_raw_restaurant(self, row_restaurant):
+        normalized = text_normalizer(row_restaurant)
+        phone_match = re.match(r".*\((\d+-\d+)\)", normalized)
+
+        if phone_match is None:
+            return normalized
+
+        phone = phone_match.group(1).replace("-", "").strip()
+
+        restaurant_name = self.restaurant_phone_dict[phone]
+        if restaurant_name is None:
+            print(f"New phone detected: {phone}")
+            return normalized
+        else:
+            return restaurant_name
+
     def crawl(self, soup, **kwargs):
         date = kwargs.get("date", datetime.datetime.now(timezone("Asia/Seoul")).date())
         table = soup.find("table", {"class": "menu-table"})
@@ -148,11 +171,10 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
         for tr in trs:
             tds = tr.find_all("td", recursive=False)
-            row_restaurant = tds[0].text
-            if any(
-                (except_restaurant_name in row_restaurant)
-                for except_restaurant_name in self.except_restaurant_name_list
-            ):
+
+            raw_restaurant = tds[0].text
+            restaurant = self.get_name_from_raw_restaurant(raw_restaurant)
+            if restaurant in self.except_restaurant_list:
                 continue
 
             for col_idx, td in enumerate(tds[1:]):
@@ -161,7 +183,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
 
                 # td.text에서 식단을 한번에 가져오는 것으로 변경
                 names = td.text.split("\n")
-                restaurant = text_normalizer(row_restaurant)
+
                 last_meal = None
                 next_line_merged = False
                 filtered_names = []
@@ -182,14 +204,6 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                             for to_clean in ["ㅁ ", "( ~ )", "(~)"]:
                                 name_cleaned = name_cleaned.replace(to_clean, "")
                             meal.set_name(name_cleaned)
-
-                        # 교직원 식당 이름 설정을 위한 로직
-                        if (
-                            (meal.restaurant == "자하연식당 3층" or "자하연식당" in meal.restaurant)
-                            and last_meal
-                            and ("교직" in last_meal.name or "교직" in last_meal.restaurant)
-                        ) or meal.restaurant in self.jaha_faculty_keyword:
-                            meal.set_restaurant("자하연식당 3층")
 
                         # 다음 한줄만 추가하는 경우
                         if not next_line_merged and self.is_next_line_keyword(last_meal):
@@ -214,7 +228,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
                             next_line_merged = False
                     elif self.get_multi_line_delimiter(last_meal) is None:
                         if meal.restaurant != restaurant:
-                            meal = Meal(row_restaurant, name, date, meal_type)
+                            meal = Meal(raw_restaurant, name, date, meal_type)
                             meal = self.normalize(meal)
                             restaurant = meal.restaurant
                         self.found_meal(last_meal)
