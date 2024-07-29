@@ -1,11 +1,12 @@
-from abc import ABCMeta, abstractmethod
-import re
 import datetime
+import json
+import re
+from abc import ABCMeta, abstractmethod
+
+import aiohttp
+import urllib3
 from bs4 import BeautifulSoup
 from pytz import timezone
-import urllib3
-import json
-import aiohttp
 
 
 def text_normalizer(text, only_letters=False):
@@ -189,15 +190,20 @@ class RestaurantCrawler(metaclass=ABCMeta):
         urllib3.disable_warnings()
         if url is None:
             url = self.url
-        async with aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)) as session:
-            async with session.get(url) as response:
-                try:
+        try:
+            async with aiohttp.ClientSession(
+                headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)
+            ) as session:
+                async with session.get(url) as response:
+                    if response.status != 200:
+                        print(f"Failed to fetch {url}: Status code {response.status}")
+                        return
                     html = await response.read()
                     # html = await response.text()
                     soup = BeautifulSoup(html, "html.parser")
                     self.crawl(soup, **kwargs)
-                except Exception as e:
-                    print(f"Error in Run: {str(e)}")
+        except Exception as e:
+            print(f"Error in Run: {str(e)}")
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
