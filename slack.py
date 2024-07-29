@@ -1,14 +1,22 @@
-import requests
 import os
+
+import requests
 
 
 def _send_slack_message(message: str):
     slack_token = os.environ.get("SLACK_TOKEN")
+    slack_channel = os.environ["SLACK_CHANNEL"]
     if not slack_token:
+        print("No Slack token provided. Skipping sending message.")
         return
-    body = {"channel": slack_token, "text": message}
-    headers = {"Authorization": f'Bearer {os.environ["SLACK_TOKEN"]}'}
-    requests.post("https://slack.com/api/chat.postMessage", headers=headers, data=body, timeout=100)
+    body = {"channel": slack_channel, "text": message}
+    headers = {"Authorization": f"Bearer {slack_token}"}
+    try:
+        res = requests.post("https://slack.com/api/chat.postMessage", headers=headers, data=body, timeout=100)
+        res.raise_for_status()
+    except Exception as e:
+        print(f"Failed to send Slack message: {str(e)}")
+        print(f"Response: {e.response.text if e.response else 'No response'}")
 
 
 def send_deleted_menus_message(menus: list):
