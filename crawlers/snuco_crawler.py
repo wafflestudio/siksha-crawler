@@ -1,15 +1,16 @@
 import asyncio
 import datetime
 import re
+
 from pytz import timezone
 
 from crawlers.base_crawler import (
+    FindParenthesisHash,
+    FindPrice,
+    Meal,
     MealNormalizer,
     RestaurantCrawler,
-    Meal,
     text_normalizer,
-    FindPrice,
-    FindParenthesisHash,
 )
 
 
@@ -77,6 +78,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         "8805545": "3식당",
         "8801939": "302동식당",
         "8898955": "301동식당",
+        "8871123": "220동식당",
     }
     except_restaurant_list = ["기숙사식당"]  # snudorm에서 처리
 
