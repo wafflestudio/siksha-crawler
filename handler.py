@@ -1,20 +1,22 @@
-import pymysql
-import os
-import datetime
-from pytz import timezone
-from itertools import compress
-import asyncio
 import argparse
+import asyncio
+import datetime
+import os
+from itertools import compress
+
+import pymysql
+from pytz import timezone
+
 from crawlers.base_crawler import text_normalizer
-from crawlers.vet_crawler import VetRestaurantCrawler
-from crawlers.snudorm_crawler import SnudormRestaurantCrawler
 from crawlers.snuco_crawler import SnucoRestaurantCrawler
+from crawlers.snudorm_crawler import SnudormRestaurantCrawler
+from crawlers.vet_crawler import VetRestaurantCrawler
 from slack import (
-    send_new_restaurants_message,
-    send_deleted_menus_message,
-    send_new_menus_message,
-    send_edited_menus_message,
     _send_slack_message,
+    send_deleted_menus_message,
+    send_edited_menus_message,
+    send_new_menus_message,
+    send_new_restaurants_message,
 )
 
 
@@ -209,7 +211,7 @@ def crawl(event, context):
     except Exception as e:
         siksha_db.rollback()
         print(e)
-        _send_slack_message("Crawling has been failed")
+        _send_slack_message(f"Crawling has been failed: {str(e)}")
         return "Crawling has been failed"
     finally:
         cursor.close()
