@@ -6,6 +6,9 @@ import requests
 def _send_slack_message(message: str):
     slack_token = os.environ.get("SLACK_TOKEN")
     slack_channel = os.environ["SLACK_CHANNEL"]
+    if not slack_token:
+        print("No Slack token provided. Skipping sending message.")
+        return
     body = {"channel": slack_channel, "text": message}
     headers = {"Authorization": f"Bearer {slack_token}"}
     try:
