@@ -192,7 +192,8 @@ class RestaurantCrawler(metaclass=ABCMeta):
             url = self.url
         try:
             async with aiohttp.ClientSession(
-                headers=self.headers, connector=aiohttp.TCPConnector(ssl=False)
+                headers=self.headers,
+                connector=aiohttp.TCPConnector(ssl=False),
             ) as session:
                 async with session.get(url) as response:
                     if response.status != 200:
@@ -204,6 +205,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
                     self.crawl(soup, **kwargs)
         except Exception as e:
             print(f"Error in Run: {str(e)}")
+            print(f"URL: {url}")
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
