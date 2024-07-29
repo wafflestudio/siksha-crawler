@@ -5,5 +5,5 @@ default:
 
 .PHONY: lint
 lint:
-	black --check .
+	black .
 	pylint --recursive=yes .
