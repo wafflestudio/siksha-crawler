@@ -49,7 +49,7 @@ class FindRestaurantDetail(MealNormalizer):
 
 
 class SnucoRestaurantCrawler(RestaurantCrawler):
-    url = "https://snuco.snu.ac.kr/ko/foodmenu/"
+    url = "https://snuco.snu.ac.kr/foodmenu/"
     normalizer_classes = [
         FindPrice,
         FindParenthesisHash,
