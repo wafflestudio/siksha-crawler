@@ -177,6 +177,9 @@ class RestaurantCrawler(metaclass=ABCMeta):
         "브레이크",  # 라운지오 (오후 2시 40~오후 4시 브레이크 타임)
         "TAKE",  # 301동 <TAKE-OUT: 9시~16시> 및 ★TAKE-OUT 카페 301동
         "대학원생",  # 301동 12:30~14:00(학생,대학원생 이용)
+        "준비수량",  # 301동 '08:20~준비수량소진시 까지,'
+        "학기중",  # 301동 '*학기중  일 200식 한정*'
+        "2중선택",  # 301동 (1),(2)중 선택 1, (1), (2)중 선택 1
     ]
 
     def __init__(self):
@@ -234,8 +237,3 @@ def print_meals(meals):
         print("\t" + str(meal))
     print("]")
     print("total #:", len(meals))
-
-
-# crawler = SnucoRestaurantCrawler()
-# asyncio.run(crawler.run(date=datetime.date(2023, 5, 2)))
-# print_meals(crawler.meals)
