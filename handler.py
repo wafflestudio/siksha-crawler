@@ -113,15 +113,14 @@ def menus_transaction(crawled_meals, cursor):
     db_menus = cursor.fetchall()
     new_menus, deleted_menus, edited_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
-    # 20240924 ~ 20240926 축제 기간 동안 임시 조치입니다.
-    # if deleted_menus:
-    #     deleted_menus_id = [str(menu.get("id")) for menu in deleted_menus]
-    #     delete_menus_query = f"""
-    #         DELETE FROM menu
-    #         WHERE id in ({','.join(deleted_menus_id)});
-    #     """
-    #     cursor.execute(delete_menus_query)
-    # send_deleted_menus_message(deleted_menus)
+    if deleted_menus:
+        deleted_menus_id = [str(menu.get("id")) for menu in deleted_menus]
+        delete_menus_query = f"""
+            DELETE FROM menu
+            WHERE id in ({','.join(deleted_menus_id)});
+        """
+        cursor.execute(delete_menus_query)
+    send_deleted_menus_message(deleted_menus)
 
     insert_menus_query = """
         INSERT INTO menu(restaurant_id, code, date, type, name_kr, price, etc)
