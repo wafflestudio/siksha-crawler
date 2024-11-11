@@ -141,7 +141,7 @@ def menus_transaction(crawled_meals, cursor):
 
 
 async def run_crawlers(crawlers):
-    tasks = [asyncio.create_task(crawler.run_30days()) for crawler in crawlers]
+    tasks = [asyncio.create_task(crawler.run_7days()) for crawler in crawlers]
     return await asyncio.gather(*tasks, return_exceptions=True)
 
 
@@ -149,7 +149,11 @@ def crawl_debug(**kwargs):
     arg_date = kwargs.get("date")
     arg_restaurant = kwargs.get("restaurant")
 
-    crawlers = [VetRestaurantCrawler(), SnudormRestaurantCrawler(), SnucoRestaurantCrawler()]
+    crawlers = [
+        VetRestaurantCrawler(),
+        SnudormRestaurantCrawler(),
+        SnucoRestaurantCrawler(),
+    ]
     results = asyncio.run(run_crawlers(crawlers))
     for result in results:
         for err in result:
@@ -165,12 +169,18 @@ def crawl_debug(**kwargs):
         ndate = datetime.datetime(int(arg_date[:4]), int(arg_date[4:6]), int(arg_date[6:])).date()
 
         crawled_meals = list(
-            filter(lambda meal: (meal.date == ndate and arg_restaurant in meal.restaurant), crawled_meals)
+            filter(
+                lambda meal: (meal.date == ndate and arg_restaurant in meal.restaurant),
+                crawled_meals,
+            )
         )
 
     else:
         crawled_meals = list(
-            filter(lambda meal: (meal.date >= today and arg_restaurant in meal.restaurant), crawled_meals)
+            filter(
+                lambda meal: (meal.date >= today and arg_restaurant in meal.restaurant),
+                crawled_meals,
+            )
         )
 
     for meal in crawled_meals:
@@ -189,7 +199,11 @@ def crawl(event, context):
     cursor = siksha_db.cursor(pymysql.cursors.DictCursor)
     try:
         print("Start crawling")
-        crawlers = [VetRestaurantCrawler(), SnudormRestaurantCrawler(), SnucoRestaurantCrawler()]
+        crawlers = [
+            VetRestaurantCrawler(),
+            SnudormRestaurantCrawler(),
+            SnucoRestaurantCrawler(),
+        ]
         results = asyncio.run(run_crawlers(crawlers))
         for result in results:
             for err in result:
