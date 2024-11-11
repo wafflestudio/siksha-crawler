@@ -1,12 +1,13 @@
 import asyncio
-from crawlers.base_crawler import RestaurantCrawler, Meal
+
+from crawlers.base_crawler import Meal, RestaurantCrawler
 
 
 class VetRestaurantCrawler(RestaurantCrawler):
     url = "https://vet.snu.ac.kr/금주의-식단/"
     restaurant = "수의대식당"
 
-    async def run_30days(self):
+    async def run_7days(self):
         return await asyncio.gather(self.run(), return_exceptions=True)
 
     def crawl(self, soup, **kwargs):

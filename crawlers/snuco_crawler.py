@@ -7,45 +7,13 @@ from pytz import timezone
 from crawlers.base_crawler import (
     FindParenthesisHash,
     FindPrice,
+    FindRestaurantDetail,
     Meal,
-    MealNormalizer,
+    RemoveInfoFromMealName,
+    RemoveMealNumber,
     RestaurantCrawler,
     text_normalizer,
 )
-
-
-class RemoveMealNumber(MealNormalizer):
-    def normalize(self, meal, **kwargs):
-        if "①" in meal.name or "②" in meal.name:
-            meal.set_name(meal.name.replace("①", ""))
-            meal.set_name(meal.name.replace("②", ""))
-        return meal
-
-
-class RemoveInfoFromMealName(MealNormalizer):
-    info_sign = ["※", "►", "※", "브레이크 타임"]
-
-    def normalize(self, meal, **kwargs):
-        meal.set_name(re.sub("(" + "|".join(self.info_sign) + ").*", "", meal.name))
-        return meal
-
-
-class FindRestaurantDetail(MealNormalizer):
-    restaurant_regex = [
-        r"(.*)\( ?(\d층.*)\)(.*)",
-        r"(.*)\((.*식당) ?\)(.*)",
-        r"(.*)< ?(\d층.*)>(.*)",
-        r"(.*)<(.*식당) ?>(.*)",
-        r"(.*)<(테이크아웃)>(.*)",
-    ]
-
-    def normalize(self, meal, **kwargs):
-        for regex in self.restaurant_regex:
-            m = re.match(regex, meal.name)
-            if m:
-                meal.set_restaurant(meal.restaurant + ">" + m.group(2).strip())
-                meal.set_name(m.group(1).strip() + m.group(3).strip())
-        return meal
 
 
 class SnucoRestaurantCrawler(RestaurantCrawler):
@@ -57,9 +25,21 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         RemoveInfoFromMealName,
         RemoveMealNumber,
     ]
-    next_line_str = ["봄", "소반", "콤비메뉴", "셀프코너", "채식뷔페", "추가코너", "돈까스비빔면셋트", "탄탄비빔면셋트"]
+    next_line_str = [
+        "봄",
+        "소반",
+        "콤비메뉴",
+        "셀프코너",
+        "채식뷔페",
+        "추가코너",
+        "돈까스비빔면셋트",
+        "탄탄비빔면셋트",
+    ]
     next_line_keyword = ["지역맛집따라잡기", "호구셋트"]  # 다음 한 줄 있는 것들
-    multi_line_keywords = {"+": ["셀프코너", "채식뷔페", "뷔페"], " / ": ["추가코너"]}  # 다음에 여러줄 있는 것들
+    multi_line_keywords = {
+        "+": ["셀프코너", "채식뷔페", "뷔페"],
+        " / ": ["추가코너"],
+    }  # 다음에 여러줄 있는 것들
     multi_line_finisher = {
         "셀프코너": "주문식메뉴"
     }  # multiline이 끝나는 지표. ex. 로직상 주문식 메뉴까지 append된 뒤에 확인한다. 따라서 마지막에 주문식 메뉴 따로 빼줘야함
@@ -115,7 +95,10 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         if not meal:
             return None
         code = text_normalizer(meal.name, True)
-        for keyword, finisher in self.multi_line_finisher.items():  # finisher 발견되면 delimiter가 없는 것 취급
+        for (
+            keyword,
+            finisher,
+        ) in self.multi_line_finisher.items():  # finisher 발견되면 delimiter가 없는 것 취급
             if keyword in code and finisher in code:
                 return None
         for delimiter, keywords in self.multi_line_keywords.items():
@@ -133,9 +116,9 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
             last_meal.set_price(meal.price)
         return last_meal
 
-    async def run_30days(self):
+    async def run_7days(self):
         date = datetime.datetime.now(timezone("Asia/Seoul")).date()
-        tasks = [self.run(date=date + datetime.timedelta(days=i)) for i in range(30)]
+        tasks = [self.run(date=date + datetime.timedelta(days=i)) for i in range(7)]
         return await asyncio.gather(*tasks, return_exceptions=True)
 
     async def run(self, date=None, **kwargs):
@@ -148,8 +131,8 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         if meal and self.is_meal_name_when_normalized(meal.name) and "교직" not in meal.name:
             self.meals.append(meal)
 
-    def get_name_from_raw_restaurant(self, row_restaurant):
-        normalized = text_normalizer(row_restaurant)
+    def get_name_from_raw_restaurant(self, raw_restaurant):
+        normalized = text_normalizer(raw_restaurant)
         phone_match = re.match(r".*\((\d+-\d+)\)", normalized)
 
         if phone_match is None:
