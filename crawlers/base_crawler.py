@@ -57,7 +57,9 @@ class Meal:
         "dinner": DN,
     }
 
-    def __init__(self, restaurant="", name="", date=None, type="", price=None, etc=None):
+    def __init__(
+        self, restaurant="", name="", date=None, type="", price=None, etc=None
+    ):
         self.set_restaurant(restaurant)
         self.set_name(name)
         self.set_date(date)
@@ -138,8 +140,67 @@ class FindParenthesisHash(MealNormalizer):
         return meal
 
 
+class RemoveMealNumber(MealNormalizer):
+    def normalize(self, meal, **kwargs):
+        if "①" in meal.name or "②" in meal.name:
+            meal.set_name(meal.name.replace("①", ""))
+            meal.set_name(meal.name.replace("②", ""))
+        return meal
+
+
+class RemoveMealIdentifierFromMealName(MealNormalizer):
+    identifiers = ["(잇템)"]
+
+    def normalize(self, meal, **kwargs):
+        for identifier in self.identifiers:
+            meal.set_name(meal.name.replace(identifier, ""))
+        return meal
+
+
+class RemoveInfoFromMealName(MealNormalizer):
+    info_sign = ["※", "►", "※", "브레이크 타임"]
+
+    def normalize(self, meal, **kwargs):
+        meal.set_name(re.sub("(" + "|".join(self.info_sign) + ").*", "", meal.name))
+        return meal
+
+
+class FindRestaurantDetail(MealNormalizer):
+    restaurant_regex = [
+        r"(.*)\( ?(\d층.*)\)(.*)",
+        r"(.*)\((.*식당) ?\)(.*)",
+        r"(.*)< ?(\d층.*)>(.*)",
+        r"(.*)<(.*식당) ?>(.*)",
+        r"(.*)<(테이크아웃)>(.*)",
+    ]
+
+    def normalize(self, meal, **kwargs):
+        for regex in self.restaurant_regex:
+            m = re.match(regex, meal.name)
+            if m:
+                meal.set_restaurant(meal.restaurant + ">" + m.group(2).strip())
+                meal.set_name(m.group(1).strip() + m.group(3).strip())
+        return meal
+
+
+class AddRestaurantDetail(MealNormalizer):
+    def normalize(self, meal, **kwargs):
+        details = kwargs.get("restaurant_detail", [])
+        final_restaurants = kwargs.get("final_restaurants", [])
+        restaurant = meal.restaurant
+        for detail in details:
+            restaurant = restaurant + ">" + detail
+            if text_normalizer(detail, True) in final_restaurants:
+                break
+        meal.set_restaurant(restaurant)
+
+        return meal
+
+
 class RestaurantCrawler(metaclass=ABCMeta):
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0"
+    }
     url = ""
     normalizer_classes = []
     not_meal = [
@@ -188,7 +249,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
         self.meals = []
 
     @abstractmethod
-    async def run_30days(self):
+    async def run_7days(self):
         pass
 
     async def run(self, url=None, **kwargs):
@@ -221,7 +282,9 @@ class RestaurantCrawler(metaclass=ABCMeta):
         normalized_name = text_normalizer(name, True)
         if not normalized_name or normalized_name == "메뉴":
             return False
-        is_meal_name = all(re.match(".*" + p + ".*", normalized_name) is None for p in self.not_meal)
+        is_meal_name = all(
+            re.match(".*" + p + ".*", normalized_name) is None for p in self.not_meal
+        )
         return is_meal_name
 
     def found_meal(self, meal):
