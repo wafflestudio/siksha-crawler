@@ -55,9 +55,7 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
         if not meal:
             return False
         code = text_normalizer(meal.name, True)
-        return any((str == code) for str in self.next_line_str) or any(
-            (str in code) for str in self.next_line_keyword
-        )
+        return any((str == code) for str in self.next_line_str) or any((str in code) for str in self.next_line_keyword)
 
     def filter_menu_names(self, meal_names: list):
         return [name for name in meal_names if self.is_meal_name_when_normalized(name)]
@@ -86,9 +84,7 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
         for (
             keyword,
             finisher,
-        ) in (
-            self.multi_line_finisher.items()
-        ):  # finisher 발견되면 delimiter가 없는 것 취급
+        ) in self.multi_line_finisher.items():  # finisher 발견되면 delimiter가 없는 것 취급
             if keyword in code and finisher in code:
                 return None
         for delimiter, keywords in self.multi_line_keywords.items():
@@ -127,9 +123,7 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
         # 기존 기숙사 식당 이름과 매칭되도록 함
         # 24.11.11 기준 생협기숙사(919동), 아워홈(901동)만 존재
         # 24.11.10 기준 기숙사식당>919동, 기숙사식당>아워홈으로 되어있음
-        full_restaurant_anme = (
-            self.restaurant + ">" + self.restaurant_adapter.get(normalized)
-        )
+        full_restaurant_anme = self.restaurant + ">" + self.restaurant_adapter.get(normalized)
         return full_restaurant_anme
 
     def crawl(self, soup: BeautifulSoup, **kwargs):
@@ -173,9 +167,7 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
                         meal.set_name(name_cleaned)
 
                         # 다음 한줄만 추가하는 경우
-                        if not next_line_merged and self.is_next_line_keyword(
-                            last_meal
-                        ):
+                        if not next_line_merged and self.is_next_line_keyword(last_meal):
                             last_meal = self.combine(last_meal, meal)
                             next_line_merged = True
 
@@ -186,17 +178,11 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
                                 last_meal = self.combine(last_meal, meal, delimiter)
                             # 그래서 여기서 combine 된다.
                             else:  # delimit 하지 않는 경우는
-                                for (
-                                    finisher_to_remove
-                                ) in self.multi_line_finisher_pair.values():
+                                for finisher_to_remove in self.multi_line_finisher_pair.values():
                                     if finisher_to_remove in str(last_meal):
-                                        finisher_removed_name = last_meal.name.replace(
-                                            finisher_to_remove, ""
-                                        )
+                                        finisher_removed_name = last_meal.name.replace(finisher_to_remove, "")
                                         if finisher_removed_name.endswith("+"):
-                                            finisher_removed_name = (
-                                                finisher_removed_name[:-1]
-                                            )
+                                            finisher_removed_name = finisher_removed_name[:-1]
                                         last_meal.set_name(finisher_removed_name)
                                 self.found_meal(last_meal)
                                 last_meal = meal  # 그거 자체로 메뉴다.

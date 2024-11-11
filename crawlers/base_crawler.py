@@ -57,9 +57,7 @@ class Meal:
         "dinner": DN,
     }
 
-    def __init__(
-        self, restaurant="", name="", date=None, type="", price=None, etc=None
-    ):
+    def __init__(self, restaurant="", name="", date=None, type="", price=None, etc=None):
         self.set_restaurant(restaurant)
         self.set_name(name)
         self.set_date(date)
@@ -198,9 +196,7 @@ class AddRestaurantDetail(MealNormalizer):
 
 
 class RestaurantCrawler(metaclass=ABCMeta):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0"
-    }
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0"}
     url = ""
     normalizer_classes = []
     not_meal = [
@@ -282,9 +278,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
         normalized_name = text_normalizer(name, True)
         if not normalized_name or normalized_name == "메뉴":
             return False
-        is_meal_name = all(
-            re.match(".*" + p + ".*", normalized_name) is None for p in self.not_meal
-        )
+        is_meal_name = all(re.match(".*" + p + ".*", normalized_name) is None for p in self.not_meal)
         return is_meal_name
 
     def found_meal(self, meal):
