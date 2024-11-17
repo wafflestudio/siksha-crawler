@@ -259,15 +259,14 @@ class RestaurantCrawler(metaclass=ABCMeta):
             ) as session:
                 async with session.get(url) as response:
                     if response.status != 200:
-                        print(f"Failed to fetch {url}: Status code {response.status}")
+                        _send_slack_message(f"Failed to fetch {url}: Status code {response.status}")
                         return
                     html = await response.read()
                     # html = await response.text()
                     soup = BeautifulSoup(html, "html.parser")
                     self.crawl(soup, **kwargs)
         except Exception as e:
-            print(f"Error in Run: {str(e)}")
-            print(f"URL: {url}")
+            _send_slack_message(f"Error in Run, {type(e).__name}: {str(e)}\nURL: {url}")
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
