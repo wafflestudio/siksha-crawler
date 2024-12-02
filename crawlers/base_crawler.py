@@ -8,6 +8,8 @@ import urllib3
 from bs4 import BeautifulSoup
 from pytz import timezone
 
+from slack import _send_slack_message
+
 
 def text_normalizer(text, only_letters=False):
     non_letters = [
@@ -121,11 +123,13 @@ class MealNormalizer(metaclass=ABCMeta):
 
 class FindPrice(MealNormalizer):
     def normalize(self, meal, **kwargs):
-        p = re.compile(r"([1-9]\d{0,2}[,.]?\d00)(.*?원)?")
-        m = p.search(meal.name)
+        p = re.compile(r"([1-9]\d{0,2}[,.]?\d00)\s*(.*?원)?")
+        m = list(p.finditer(meal.name))
         if m:
-            meal.set_price(m.group(1))
-            meal.set_name(p.sub("", meal.name))
+            last_match = m[-1]  # 메뉴명 중간에 가격이 들어가는 경우가 있어 마지막에 매칭되는 것을 가격으로 판정
+            meal.set_price(last_match.group(1))
+            start, end = last_match.span()
+            meal.set_name(meal.name[:start] + meal.name[end:])
         return meal
 
 
@@ -199,7 +203,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0"}
     url = ""
     normalizer_classes = []
-    not_meal = [
+    not_meal = [  # 메뉴이름에 이를 포함하는 경우 메뉴에서 제외
         "휴무",
         "휴점",
         "폐점",
@@ -240,6 +244,11 @@ class RestaurantCrawler(metaclass=ABCMeta):
         "하계방학",  # 301동 '*하계방학 일 100식 한정*'
         "2중택1",  # 301동 '(1), (2) 중 택1', '(1), (2) 중 택 1'
     ]
+    not_meal_exact_match = [  # 메뉴이름이 정확히 일치하는 경우만 제외
+        "메뉴",
+        "식사",  # 301동 <식사>
+        "천원의아침밥",  # 301동 <천원의아침밥>
+    ]
 
     def __init__(self):
         self.meals = []
@@ -266,7 +275,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
                     soup = BeautifulSoup(html, "html.parser")
                     self.crawl(soup, **kwargs)
         except Exception as e:
-            _send_slack_message(f"Error in Run, {type(e).__name}: {str(e)}\nURL: {url}")
+            _send_slack_message(f"Error in Run, {type(e).__name__}: {str(e)}\nURL: {url}")
 
     def normalize(self, meal, **kwargs):
         for normalizer_cls in self.normalizer_classes:
@@ -275,7 +284,7 @@ class RestaurantCrawler(metaclass=ABCMeta):
 
     def is_meal_name_when_normalized(self, name):
         normalized_name = text_normalizer(name, True)
-        if not normalized_name or normalized_name == "메뉴":
+        if not normalized_name or normalized_name in self.not_meal_exact_match:
             return False
         is_meal_name = all(re.match(".*" + p + ".*", normalized_name) is None for p in self.not_meal)
         return is_meal_name
