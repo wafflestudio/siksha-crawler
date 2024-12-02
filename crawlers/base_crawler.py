@@ -122,14 +122,23 @@ class MealNormalizer(metaclass=ABCMeta):
 
 
 class FindPrice(MealNormalizer):
-    def normalize(self, meal, **kwargs):
-        p = re.compile(r"([1-9]\d{0,2}[,.]?\d00)\s*(.*?원)?")
-        m = list(p.finditer(meal.name))
+    def _match_pattern(self, meal, pattern):
+        m = list(pattern.finditer(meal.name))
         if m:
             last_match = m[-1]  # 메뉴명 중간에 가격이 들어가는 경우가 있어 마지막에 매칭되는 것을 가격으로 판정
             meal.set_price(last_match.group(1))
             start, end = last_match.span()
             meal.set_name(meal.name[:start] + meal.name[end:])
+        return meal, bool(m)
+
+    def normalize(self, meal, **kwargs):
+        p = re.compile(r"([1-9]\d{0,2}[,.]?\d00)\s*(.*?원)?")
+        meal, result = self._match_pattern(meal, p)
+
+        if not result:  # 가격이 1000원 미만인 경우
+            p = re.compile(r"([1-9]\d{0,2})\s*(원)")
+            meal, result = self._match_pattern(meal, p)
+
         return meal
 
 
