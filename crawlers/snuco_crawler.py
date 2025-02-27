@@ -59,6 +59,7 @@ class SnucoRestaurantCrawler(RestaurantCrawler):
         "8801939": "302동식당",
         "8898955": "301동식당",
         "8871123": "220동식당",
+        "8789288": "버거운버거",
     }
     except_restaurant_list = ["기숙사식당"]  # snudorm에서 처리
 
