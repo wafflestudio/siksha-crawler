@@ -114,7 +114,13 @@ def menus_transaction(crawled_meals, cursor):
     new_menus, deleted_menus, edited_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
     if deleted_menus:
-        deleted_menus_id = [str(menu.get("id")) for menu in deleted_menus]
+        deleted_menus_id = []
+        for menu in deleted_menus:
+            restaurant_id = menu.get("restaurant_id")
+            if restaurant_id >= 235 and restaurant_id <= 249:
+                continue
+            else: 
+                deleted_menus_id.append(str(menu.get("id")))
         delete_menus_query = f"""
             DELETE FROM menu
             WHERE id in ({','.join(deleted_menus_id)});
