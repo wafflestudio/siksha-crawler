@@ -16,7 +16,6 @@ var/
 .installed.cfg
 *.egg
 .env
-.env.dev
 
 # mac
 .DS_Store
