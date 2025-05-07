@@ -119,7 +119,7 @@ def menus_transaction(crawled_meals, cursor):
             restaurant_id = menu.get("restaurant_id")
             if restaurant_id >= 235 and restaurant_id <= 249:
                 continue
-            else: 
+            else:
                 deleted_menus_id.append(str(menu.get("id")))
         delete_menus_query = f"""
             DELETE FROM menu

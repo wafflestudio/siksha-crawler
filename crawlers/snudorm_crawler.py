@@ -40,7 +40,9 @@ class SnudormRestaurantCrawler(RestaurantCrawler):
     ]
     next_line_keyword = []  # 다음 한 줄 있는 것들
     multi_line_keywords = {}  # 다음에 여러줄 있는 것들
-    multi_line_finisher = {}  # multiline이 끝나는 지표. ex. 로직상 주문식 메뉴까지 append된 뒤에 확인한다. 따라서 마지막에 주문식 메뉴 따로 빼줘야함
+    multi_line_finisher = (
+        {}
+    )  # multiline이 끝나는 지표. ex. 로직상 주문식 메뉴까지 append된 뒤에 확인한다. 따라서 마지막에 주문식 메뉴 따로 빼줘야함
     multi_line_finisher_pair = {}
 
     restaurant_phone_dict = {}
