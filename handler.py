@@ -119,14 +119,15 @@ def menus_transaction(crawled_meals, cursor):
             restaurant_id = menu.get("restaurant_id")
             if restaurant_id >= 235 and restaurant_id <= 249:
                 continue
-            else:
-                deleted_menus_id.append(str(menu.get("id")))
-        delete_menus_query = f"""
-            DELETE FROM menu
-            WHERE id in ({','.join(deleted_menus_id)});
-        """
-        cursor.execute(delete_menus_query)
-    send_deleted_menus_message(deleted_menus)
+            deleted_menus_id.append(str(menu.get("id")))
+
+        if deleted_menus_id:
+            delete_menus_query = f"""
+                DELETE FROM menu
+                WHERE id in ({','.join(deleted_menus_id)});
+            """
+            cursor.execute(delete_menus_query)
+        send_deleted_menus_message(deleted_menus)
 
     insert_menus_query = """
         INSERT INTO menu(restaurant_id, code, date, type, name_kr, price, etc)
