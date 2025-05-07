@@ -114,18 +114,18 @@ def menus_transaction(crawled_meals, cursor):
     new_menus, deleted_menus, edited_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
     # 원본 코드
-    #if deleted_menus:
+    # if deleted_menus:
     #    deleted_menus_id = [str(menu.get("id")) for menu in deleted_menus]
     #    delete_menus_query = f"""
     #        DELETE FROM menu
     #        WHERE id in ({','.join(deleted_menus_id)});
     #    """
     #    cursor.execute(delete_menus_query)
-    #send_deleted_menus_message(deleted_menus)
+    # send_deleted_menus_message(deleted_menus)
     #
-    
+
     # 축제용 수정된 코드 (prod 전용)
-    # 축제 기간 (5/13 ~ 5/15) 종료 후 삭제 
+    # 축제 기간 (5/13 ~ 5/15) 종료 후 삭제
     if deleted_menus:
         deleted_menus_id = []
         for menu in deleted_menus:
