@@ -121,7 +121,7 @@ def menus_transaction(crawled_meals, cursor):
         """
         cursor.execute(delete_menus_query)
     send_deleted_menus_message(deleted_menus)
-    
+
     insert_menus_query = """
         INSERT INTO menu(restaurant_id, code, date, type, name_kr, price, etc)
         VALUES (%(restaurant_id)s, %(code)s, %(date)s, %(type)s, %(name_kr)s, %(price)s, %(etc)s);
