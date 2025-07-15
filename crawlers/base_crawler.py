@@ -11,33 +11,13 @@ from pytz import timezone
 from slack import _send_slack_message
 
 
-def text_normalizer(text, only_letters=False):
-    non_letters = [
-        r"\s",
-        "<",
-        ">",
-        r"\(",
-        r"\)",
-        r"\[",
-        r"\]",
-        ",",
-        r"\*",
-        "&",
-        r"\+",
-        "-",
-        r"/",
-        ":",
-        "#",
-        r"\.",
-        "♣",
-        "▷",
-        "ㅁ",
-        "~",
-    ]
+def text_normalizer(text, convert_to_code=False):
     text = re.sub(r"\n|\(\)|<>", "", text).strip().strip(":")
     text = re.sub(r"\xa0", " ", text)
-    if only_letters:
-        text = re.sub("|".join(non_letters), "", text)
+    if convert_to_code:
+        # remove special characters and make lowercase
+        text = re.sub(r"[^a-zA-Z가-힣0-9]+", "", text)
+        text = text.lower()
     return text
 
 
