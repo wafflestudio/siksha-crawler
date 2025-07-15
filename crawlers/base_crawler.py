@@ -16,7 +16,7 @@ def text_normalizer(text, convert_to_code=False):
     text = re.sub(r"\xa0", " ", text)
     if convert_to_code:
         # remove special characters and make lowercase
-        text = re.sub(r"[^a-zA-Z가-힣0-9]+", "", text)
+        text = re.sub(r"[^a-zA-Z가-힣0-9一-龯]+", "", text)
         text = text.lower()
     return text
 
