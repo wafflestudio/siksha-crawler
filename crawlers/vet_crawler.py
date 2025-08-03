@@ -4,7 +4,7 @@ from crawlers.base_crawler import Meal, RestaurantCrawler
 
 
 class VetRestaurantCrawler(RestaurantCrawler):
-    url = "https://vet.snu.ac.kr/금주의-식단/"
+    url = "https://vet.snu.ac.kr/cafe_menu/"
     restaurant = "수의대식당"
 
     async def run_7days(self):
