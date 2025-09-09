@@ -12,7 +12,7 @@ permissions:
 jobs:
   deploy:
     name: deploy dev 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     environment: development
 
     steps:
