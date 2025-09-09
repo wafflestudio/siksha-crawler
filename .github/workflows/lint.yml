@@ -12,14 +12,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-          cache: poetry
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 2.1.1
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
+      - name: install poetry
+        run: pipx install poetry==2.1.1
+      - name: Pin Poetry to runner Python
+        run: poetry env use "${{ steps.py.outputs.python-path }}"
       - name: install black, pylint
         run: poetry install --only dev
       - name: check if code linted
