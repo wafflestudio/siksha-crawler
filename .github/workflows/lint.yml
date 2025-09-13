@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: use python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12
       - name: install ruff
