@@ -37,7 +37,7 @@ Repository = "https://github.com/wafflestudio/siksha-crawler"
 
 [dependency-groups]
 dev = [
-  "ruff>=0.12.5",
+  "ruff==0.13.0",
   "pre-commit>=3.3.3",
 ]
 
