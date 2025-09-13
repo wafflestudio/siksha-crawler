@@ -59,7 +59,7 @@ uv lock
 ### Crawler Debugging
 로컬에서 크롤러가 잘 동작하는지 확인하고 싶다면, 아래와 같이 실행합니다.
 ```
-python3 handler.py --restaurant {식당이름(일부)} --date 20221014
+python3 handler.py --restaurant {식당이름(일부)} --date 20250916
 ```
 > `--restaurant` (`-r`) 인자는 필수 <br>
 > `--date` (`-d`) 인자는 옵션. 연월일(20221106) 형식으로 date를 넣으면 그 날 식단만 나오고, 안쓰면 긁은거 다 나옴.
