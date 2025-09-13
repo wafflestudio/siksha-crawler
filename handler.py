@@ -117,7 +117,7 @@ def menus_transaction(crawled_meals, cursor):
         deleted_menus_id = [str(menu.get("id")) for menu in deleted_menus]
         delete_menus_query = f"""
             DELETE FROM menu
-            WHERE id in ({','.join(deleted_menus_id)});
+            WHERE id in ({",".join(deleted_menus_id)});
         """
         cursor.execute(delete_menus_query)
     send_deleted_menus_message(deleted_menus)

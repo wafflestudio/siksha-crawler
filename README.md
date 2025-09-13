@@ -6,7 +6,7 @@
 
 ## Requirements
 - Python 3.10
-- Poetry 1.5.0
+- UV (Python package manager)
 
 ## Conventions
 
@@ -20,14 +20,15 @@ GitHub Flow + Issue based branch 방식을 사용합니다.
 
 ### Code Styles
 - [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
-- [Black](https://black.readthedocs.io/en/stable/)
+- [Ruff](https://docs.astral.sh/ruff/) - An extremely fast Python linter and formatter
 ```shell
-# Check code styles using black and pylint
+# Check and fix code styles using ruff
 make lint
+# or uv run ruff check .
 ```
 ```shell
-# Format all codes using black
-black .
+# Format all codes using ruff
+uv run ruff format .
 ```
 
 ## Dev Guidelines
@@ -35,12 +36,18 @@ black .
 ### Python Dependencies
 가상환경을 활성화하고 필요한 패키지를 설치합니다.
 ```shell
-poetry shell
-poetry install
+# Install uv if not already installed
+# 별도로 uv 설치
+pipx install uv
+# pip install uv
+
+# Install dependencies and activate virtual environment
+uv sync
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
-`pyproject.toml` 파일의 패키지 목록을 변경한 경우, 아래 명령을 통해 `poetry.lock` 파일을 최신화합니다.
+`pyproject.toml` 파일의 패키지 목록을 변경한 경우, 아래 명령을 통해 `uv.lock` 파일을 최신화합니다.
 ```shell
-poetry lock
+uv lock
 ```
 
 ### Functionality

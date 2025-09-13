@@ -1,61 +1,82 @@
-[tool.poetry]
+[project]
 name = "siksha-crawler"
 version = "0.1.0"
 description = "Siksha's Web Crawler"
 authors = [
-  "Dohyeon Kim <ladig1017@gmail.com>",
-  "Yujin Im <jina0605@gmail.com>"
+  {name = "Dohyeon Kim", email = "ladig1017@gmail.com"},
+  {name = "Yujin Im", email = "jina0605@gmail.com"}
 ]
 maintainers = [
-  "Daeyong Jeong <iwin1203@naver.com>",
-  "Hyungwook Choi <chooi221@snu.ac.kr>",
-  "Yoonsoo Park <junepark1211@snu.ac.kr>",
-  "Youngzoo Park <enkeejuniour@snu.ac.kr>",
-  "Jaewan Park <jaejae1112@gmail.com>"
+  {name = "Daeyong Jeong", email = "iwin1203@naver.com"},
+  {name = "Hyungwook Choi", email = "chooi221@snu.ac.kr"},
+  {name = "Yoonsoo Park", email = "junepark1211@snu.ac.kr"},
+  {name = "Youngzoo Park", email = "enkeejuniour@snu.ac.kr"},
+  {name = "Jaewan Park", email = "jaejae1112@gmail.com"}
 ]
 readme = "README.md"
-repository = "https://github.com/wafflestudio/siksha-crawler"
-package-mode=false
+requires-python = ">=3.10,<3.11"
+dependencies = [
+  "aiohttp>=3.8.4",
+  "beautifulsoup4>=4.12.2",
+  "chardet>=5.1.0",
+  "click>=8.1.5",
+  "cryptography>=41.0.2",
+  "mypy-extensions>=1.0.0",
+  "pathspec>=0.11.1",
+  "platformdirs>=3.8.1",
+  "pymysql>=1.1.0",
+  "pytz>=2023.3",
+  "requests>=2.31.0",
+  "tomli>=2.0.1",
+  "typing-extensions>=4.7.1",
+  "urllib3>=2.0.3",
+]
 
-[tool.poetry.dependencies]
-python = "~3.10"
-aiohttp = "^3.8.4"
-beautifulsoup4 = "^4.12.2"
-chardet = "^5.1.0"
-click = "^8.1.5"
-cryptography = "^41.0.2"
-mypy-extensions = "^1.0.0"
-pathspec = "^0.11.1"
-platformdirs = "^3.8.1"
-pymysql = "^1.1.0"
-pytz = "^2023.3"
-requests = "^2.31.0"
-tomli = "^2.0.1"
-typing-extensions = "^4.7.1"
-urllib3 = "^2.0.3"
+[project.urls]
+Repository = "https://github.com/wafflestudio/siksha-crawler"
 
-[tool.poetry.group.dev.dependencies]
-black = "^23.7.0"
-pylint = "^2.17.4"
-pre-commit = "^3.3.3"
+[dependency-groups]
+dev = [
+  "ruff>=0.12.5",
+  "pre-commit>=3.3.3",
+]
 
-[tool.black]
+[tool.ruff]
 line-length = 120
-target-version = ['py310']
-exclude = '''
-/(
-  \.git
-  | \.venv
-)/
-'''
+target-version = "py310"
+exclude = [
+  ".git",
+  ".venv",
+  "__pycache__",
+  ".pytest_cache",
+  ".ruff_cache"
+]
 
-[tool.pylint.'MESSAGES CONTROL']
-max-line-length = 120
-disable = 'C,R,I,import-error,not-callable'
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle errors
+  "W",  # pycodestyle warnings
+  "F",  # pyflakes (import-error, not-callable 포함)
+]
+ignore = [
+  "E501",  # line too long (line-length = 120으로 처리)
+  "F401",  # imported but unused (import-error 대응)
+  "F821",  # undefined name (not-callable 관련)
+  # 기존 코드와의 호환성을 위한 추가 ignore
+  "E712",  # comparison to True/False
+  "W293",  # blank line contains whitespace
+  "F841",  # local variable assigned but never used
+]
 
-[tool.pylint]
-ignore=[".venv", ".git"]
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["crawlers"]

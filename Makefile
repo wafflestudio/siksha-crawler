@@ -5,5 +5,5 @@ default:
 
 .PHONY: lint
 lint:
-	black .
-	pylint --recursive=yes .
+	uv run ruff check . --fix
+	uv run ruff format .
