@@ -14,7 +14,7 @@ maintainers = [
   {name = "Jaewan Park", email = "jaejae1112@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.10,<3.11"
+requires-python = ">=3.12"
 dependencies = [
   "aiohttp>=3.8.4",
   "beautifulsoup4>=4.12.2",

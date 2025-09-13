@@ -1,5 +1,5 @@
 # ----- python-base ----- #
-FROM python:3.10.11-slim-bullseye AS python-base
+FROM python:3.12.10-slim-bookworm AS python-base
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
