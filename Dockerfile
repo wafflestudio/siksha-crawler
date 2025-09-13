@@ -1,5 +1,5 @@
 # ----- python-base ----- #
-FROM python:3.10.11-slim-bullseye AS python-base
+FROM python:3.12.10-slim-bookworm AS python-base
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -7,20 +7,19 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_DEFAULT_TIMEOUT=100 \
     PIP_ROOT_USER_ACTION=ignore \
-    POETRY_VIRTUALENVS_IN_PROJECT=1 \
-    POETRY_VIRTUALENVS_CREATE=1 \
-    POETRY_NO_INTERACTION=1
+    UV_SYSTEM_PYTHON=1 \
+    UV_NO_CACHE=1
 
 # ----- builder-base ----- #
 FROM python-base AS builder-base
 
-RUN pip install --upgrade pip && pip install poetry==2.1.1
+RUN pip install --upgrade pip && pip install uv==0.8.3
 
 WORKDIR /app
 
-COPY poetry.lock pyproject.toml ./
+COPY uv.lock pyproject.toml README.md ./
 
-RUN poetry install --without dev
+RUN uv sync
 
 # ----- runtime ----- #
 FROM python-base AS runtime
