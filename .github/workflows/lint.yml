@@ -15,7 +15,7 @@ jobs:
       - name: install uv
         uses: astral-sh/setup-uv@v5
         with:
-          version: "latest"
+          version: "6.6.1"
       - name: install dependencies
         run: uv sync --group dev
       - name: check if code linted
