@@ -27,3 +27,4 @@ venv
 
 # Python
 __pycache__/
+.claude
