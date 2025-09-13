@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   deploy:
-    name: deploy dev 
+    name: deploy dev
     runs-on: ubuntu-24.04-arm
     environment: development
 
@@ -34,7 +34,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: FOR K8S) Build, tag, and push image to Amazon ECR 
+      - name: FOR K8S) Build, tag, and push image to Amazon ECR
         id: build-image-k8s
         env:
           IMAGE_TAG: ${{ github.run_number }}
@@ -43,7 +43,7 @@ jobs:
           # Build a docker container and
           # push it to ECR so that it can
           # be deployed to ECS.
-          docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY_K8S:$IMAGE_TAG . \
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_K8S:$IMAGE_TAG . \
                       --build-arg DB_HOST=${{ secrets.DB_HOST_DEV }}              \
                       --build-arg DB_PORT=${{ secrets.DB_PORT }}                  \
                       --build-arg DB_NAME=${{ secrets.DB_NAME_DEV }}              \
