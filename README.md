@@ -5,7 +5,7 @@
 - [siksha-api](https://github.com/wafflestudio/siksha-api)
 
 ## Requirements
-- Python 3.10
+- Python 3.12
 - UV (Python package manager)
 
 ## Conventions
