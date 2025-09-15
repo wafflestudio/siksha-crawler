@@ -138,13 +138,12 @@ def menus_transaction(crawled_meals, cursor):
         if deleted_menus_id:
             delete_menus_query = f"""
                 DELETE FROM menu
-                WHERE id in ({','.join(deleted_menus_id)});
+                WHERE id in ({",".join(deleted_menus_id)});
             """
             cursor.execute(delete_menus_query)
     ############
 
     send_deleted_menus_message(deleted_menus)
-    
 
     insert_menus_query = """
         INSERT INTO menu(restaurant_id, code, date, type, name_kr, price, etc)
