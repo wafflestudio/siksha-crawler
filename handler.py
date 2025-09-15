@@ -113,14 +113,38 @@ def menus_transaction(crawled_meals, cursor):
     db_menus = cursor.fetchall()
     new_menus, deleted_menus, edited_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
+    ##########
+    # FIXME: 축제 기간 이후 원복
+    # if deleted_menus:
+    #     deleted_menus_id = [str(menu.get("id")) for menu in deleted_menus]
+    #     delete_menus_query = f"""
+    #         DELETE FROM menu
+    #         WHERE id in ({",".join(deleted_menus_id)});
+    #     """
+    #     cursor.execute(delete_menus_query)
+    ############
+
+    ############
+    # FIXME: 축제용 수정된 코드 (prod 전용)
+    # 축제 기간 종료 후 삭제
     if deleted_menus:
-        deleted_menus_id = [str(menu.get("id")) for menu in deleted_menus]
-        delete_menus_query = f"""
-            DELETE FROM menu
-            WHERE id in ({",".join(deleted_menus_id)});
-        """
-        cursor.execute(delete_menus_query)
+        deleted_menus_id = []
+        for menu in deleted_menus:
+            restaurant_id = menu.get("restaurant_id")
+            if restaurant_id >= 250 and restaurant_id <= 264:
+                continue
+            deleted_menus_id.append(str(menu.get("id")))
+
+        if deleted_menus_id:
+            delete_menus_query = f"""
+                DELETE FROM menu
+                WHERE id in ({','.join(deleted_menus_id)});
+            """
+            cursor.execute(delete_menus_query)
+    ############
+
     send_deleted_menus_message(deleted_menus)
+    
 
     insert_menus_query = """
         INSERT INTO menu(restaurant_id, code, date, type, name_kr, price, etc)
