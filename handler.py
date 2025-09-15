@@ -131,7 +131,7 @@ def menus_transaction(crawled_meals, cursor):
         deleted_menus_id = []
         for menu in deleted_menus:
             restaurant_id = menu.get("restaurant_id")
-            if restaurant_id >= 250 and restaurant_id <= 264:
+            if 250 <= restaurant_id <= 264:
                 continue
             deleted_menus_id.append(str(menu.get("id")))
 
