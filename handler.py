@@ -72,9 +72,22 @@ def compare_menus(db_menus, crawled_meals, restaurants):
                         db_menus[db_idx]["previous_" + field] = db_menus[db_idx].pop(field, None)
                         db_menus[db_idx][field] = crawled_menus[crawled_idx].get(field)
                 break
+    ############
+    # FIXME:  추후 삭제: 축제 음식점(250~264) 메뉴는 삭제 대상에서 제외
+    db_not_found_filtered = []
+    for idx, not_found in enumerate(db_not_found):
+        if not_found:
+            restaurant_id = db_menus[idx].get("restaurant_id")
+            if 250 <= restaurant_id <= 264:
+                db_not_found_filtered.append(False)  # 삭제하지 않음
+            else:
+                db_not_found_filtered.append(True)  # 삭제 대상
+        else:
+            db_not_found_filtered.append(False)
+    ######
     return (
         list(compress(crawled_menus, crawled_not_found)),
-        list(compress(db_menus, db_not_found)),
+        list(compress(db_menus, db_not_found_filtered)),  # FIXME: 축제 음식점(250~264) 메뉴는 삭제 대상에서 제외
         list(compress(db_menus, edited)),
     )
 
@@ -113,36 +126,13 @@ def menus_transaction(crawled_meals, cursor):
     db_menus = cursor.fetchall()
     new_menus, deleted_menus, edited_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
-    ##########
-    # FIXME: 축제 기간 이후 원복
-    # if deleted_menus:
-    #     deleted_menus_id = [str(menu.get("id")) for menu in deleted_menus]
-    #     delete_menus_query = f"""
-    #         DELETE FROM menu
-    #         WHERE id in ({",".join(deleted_menus_id)});
-    #     """
-    #     cursor.execute(delete_menus_query)
-    ############
-
-    ############
-    # FIXME: 축제용 수정된 코드 (prod 전용)
-    # 축제 기간 종료 후 삭제
     if deleted_menus:
-        deleted_menus_id = []
-        for menu in deleted_menus:
-            restaurant_id = menu.get("restaurant_id")
-            if 250 <= restaurant_id <= 264:
-                continue
-            deleted_menus_id.append(str(menu.get("id")))
-
-        if deleted_menus_id:
-            delete_menus_query = f"""
-                DELETE FROM menu
-                WHERE id in ({",".join(deleted_menus_id)});
-            """
-            cursor.execute(delete_menus_query)
-    ############
-
+        deleted_menus_id = [str(menu.get("id")) for menu in deleted_menus]
+        delete_menus_query = f"""
+            DELETE FROM menu
+            WHERE id in ({",".join(deleted_menus_id)});
+        """
+        cursor.execute(delete_menus_query)
     send_deleted_menus_message(deleted_menus)
 
     insert_menus_query = """
