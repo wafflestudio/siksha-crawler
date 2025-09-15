@@ -144,6 +144,7 @@ def menus_transaction(crawled_meals, cursor):
     ############
 
     send_deleted_menus_message(deleted_menus)
+    
 
     insert_menus_query = """
         INSERT INTO menu(restaurant_id, code, date, type, name_kr, price, etc)
