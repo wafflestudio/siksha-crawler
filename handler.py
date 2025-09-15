@@ -87,7 +87,7 @@ def compare_menus(db_menus, crawled_meals, restaurants):
     ######
     return (
         list(compress(crawled_menus, crawled_not_found)),
-        list(compress(db_menus, db_not_found_filtered)), # FIXME: 축제 음식점(250~264) 메뉴는 삭제 대상에서 제외
+        list(compress(db_menus, db_not_found_filtered)),  # FIXME: 축제 음식점(250~264) 메뉴는 삭제 대상에서 제외
         list(compress(db_menus, edited)),
     )
 
