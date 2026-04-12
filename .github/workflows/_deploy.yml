@@ -1,0 +1,65 @@
+name: deploy-template-crawler
+
+on:
+  workflow_call:
+    inputs:
+      ocir_repository:
+        required: true
+        type: string
+        description: 'OCIR repository name (e.g., siksha-dev/siksha-crawler)'
+      dockerfile:
+        required: false
+        type: string
+        default: 'Dockerfile'
+        description: 'Dockerfile path'
+    secrets:
+      OCI_AUTH_TOKEN:
+        required: true
+      DB_HOST:
+        required: true
+      DB_PORT:
+        required: true
+      DB_NAME:
+        required: true
+      DB_USER:
+        required: true
+      DB_PASSWORD:
+        required: true
+      SLACK_TOKEN:
+        required: true
+      SLACK_CHANNEL:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-24.04-arm
+
+    env:
+      IMAGE_TAG: ${{ github.run_number }}
+      OCIR_REGISTRY: yny.ocir.io
+      OCIR_NAMESPACE: ax1dvc8vmenm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to OCIR
+        run: echo "${{ secrets.OCI_AUTH_TOKEN }}" | docker login $OCIR_REGISTRY -u $OCIR_NAMESPACE/members/waffle-deployer --password-stdin
+
+      - name: Docker build, tag, and push image to OCIR
+        run: |
+          docker build \
+            -f ${{ inputs.dockerfile }} \
+            -t $OCIR_REGISTRY/$OCIR_NAMESPACE/${{ inputs.ocir_repository }}:$IMAGE_TAG \
+            --build-arg DB_HOST="${{ secrets.DB_HOST }}" \
+            --build-arg DB_PORT="${{ secrets.DB_PORT }}" \
+            --build-arg DB_NAME="${{ secrets.DB_NAME }}" \
+            --build-arg DB_USER="${{ secrets.DB_USER }}" \
+            --build-arg DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+            --build-arg SLACK_TOKEN="${{ secrets.SLACK_TOKEN }}" \
+            --build-arg SLACK_CHANNEL="${{ secrets.SLACK_CHANNEL }}" \
+            . \
+            --platform linux/arm64
+          
+          docker push $OCIR_REGISTRY/$OCIR_NAMESPACE/${{ inputs.ocir_repository }}:$IMAGE_TAG

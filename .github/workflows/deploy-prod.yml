@@ -1,0 +1,21 @@
+name: Deploy-prod-crawler
+
+on:
+  push:
+    branches: ["prod"]
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      ocir_repository: siksha-prod/siksha-crawler
+      dockerfile: Dockerfile
+    secrets:
+      OCI_AUTH_TOKEN: ${{ secrets.OCI_AUTH_TOKEN }}
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+      SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}

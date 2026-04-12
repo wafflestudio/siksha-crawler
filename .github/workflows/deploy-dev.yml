@@ -1,0 +1,21 @@
+name: Deploy-dev-crawler
+
+on:
+  push:
+    branches: ["dev"]
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      ocir_repository: siksha-dev/siksha-crawler
+      dockerfile: Dockerfile
+    secrets:
+      OCI_AUTH_TOKEN: ${{ secrets.OCI_AUTH_TOKEN }}
+      DB_HOST: ${{ secrets.DB_HOST_DEV }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_NAME: ${{ secrets.DB_NAME_DEV }}
+      DB_USER: ${{ secrets.DB_USER_DEV }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD_DEV }}
+      SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+      SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL_DEV }}
