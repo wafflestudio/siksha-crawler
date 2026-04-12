@@ -1,5 +1,8 @@
 name: deploy-template-crawler
 
+permissions:
+  contents: read
+
 on:
   workflow_call:
     inputs:
