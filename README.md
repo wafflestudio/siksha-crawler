@@ -67,7 +67,7 @@ python3 handler.py --restaurant {식당이름(일부)} --date 20250916
 - 주의) 예외처리 되어있지 않음. argument 잘못 줄 경우 에러 발생 가능성
 
 ### Docker Build Test
-로컬에서 빌드가 잘 되는지 테스트하고 싶다면, 아래와 같이 실행합니다. ([GitHub Workflow](.github/workflows/ecr-dev.yml) 참고)
+로컬에서 빌드가 잘 되는지 테스트하고 싶다면, 아래와 같이 실행합니다. ([GitHub Workflow](.github/workflows/_deploy.yml) 참고)
 ```shell 
 docker build -t {이미지이름} --build-arg {KEY}={VALUE} 
 ```
