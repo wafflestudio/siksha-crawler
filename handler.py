@@ -72,22 +72,9 @@ def compare_menus(db_menus, crawled_meals, restaurants):
                         db_menus[db_idx]["previous_" + field] = db_menus[db_idx].pop(field, None)
                         db_menus[db_idx][field] = crawled_menus[crawled_idx].get(field)
                 break
-    ############
-    # FIXME:  추후 삭제: 축제 음식점(250~264) 메뉴는 삭제 대상에서 제외
-    db_not_found_filtered = []
-    for idx, not_found in enumerate(db_not_found):
-        if not_found:
-            restaurant_id = db_menus[idx].get("restaurant_id")
-            if 250 <= restaurant_id <= 264:
-                db_not_found_filtered.append(False)  # 삭제하지 않음
-            else:
-                db_not_found_filtered.append(True)  # 삭제 대상
-        else:
-            db_not_found_filtered.append(False)
-    ######
     return (
         list(compress(crawled_menus, crawled_not_found)),
-        list(compress(db_menus, db_not_found_filtered)),  # FIXME: 축제 음식점(250~264) 메뉴는 삭제 대상에서 제외
+        list(compress(db_menus, db_not_found)),
         list(compress(db_menus, edited)),
     )
 
@@ -117,12 +104,14 @@ def menus_transaction(crawled_meals, cursor):
     cursor.execute(get_restaurants_query)
     restaurants = cursor.fetchall()
     today = datetime.datetime.now(timezone("Asia/Seoul")).date()
-    get_menus_query = f"""
-        SELECT id, restaurant_id, code, date, type, price, etc, name_kr
-        FROM menu
-        WHERE date>='{today.isoformat()}';
+    get_menus_query = """
+        SELECT m.id, m.restaurant_id, m.code, m.date, m.type, m.price, m.etc, m.name_kr
+        FROM menu AS m
+        JOIN restaurant AS r ON r.id = m.restaurant_id
+        WHERE m.date >= %s
+          AND r.code NOT LIKE %s;
     """
-    cursor.execute(get_menus_query)
+    cursor.execute(get_menus_query, (today, "[축제]%"))
     db_menus = cursor.fetchall()
     new_menus, deleted_menus, edited_menus = compare_menus(db_menus, crawled_meals, restaurants)
 
