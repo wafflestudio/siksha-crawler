@@ -15,6 +15,10 @@ on:
         type: string
         default: 'Dockerfile'
         description: 'Dockerfile path'
+      gitops_overlay_path:
+        required: true
+        type: string
+        description: 'GitOps kustomize overlay path'
     secrets:
       OCI_AUTH_TOKEN:
         required: true
@@ -31,6 +35,8 @@ on:
       SLACK_TOKEN:
         required: true
       SLACK_CHANNEL:
+        required: true
+      DEPLOYER_APP_PRIVATE_KEY:
         required: true
 
 jobs:
@@ -66,3 +72,11 @@ jobs:
             --platform linux/arm64
           
           docker push $OCIR_REGISTRY/$OCIR_NAMESPACE/${{ inputs.ocir_repository }}:$IMAGE_TAG
+
+      - name: Update GitOps image tag
+        uses: wafflestudio/waffle-world-oci/.github/actions/update-image@main
+        with:
+          image: ${{ env.OCIR_REGISTRY }}/${{ env.OCIR_NAMESPACE }}/${{ inputs.ocir_repository }}
+          tag: ${{ env.IMAGE_TAG }}
+          overlay-path: ${{ inputs.gitops_overlay_path }}
+          private-key: ${{ secrets.DEPLOYER_APP_PRIVATE_KEY }}
