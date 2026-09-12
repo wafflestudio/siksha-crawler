@@ -13,6 +13,7 @@ jobs:
     with:
       ocir_repository: siksha-prod/siksha-crawler
       dockerfile: Dockerfile
+      gitops_overlay_path: argocd/siksha-prod
     secrets:
       OCI_AUTH_TOKEN: ${{ secrets.OCI_AUTH_TOKEN }}
       DB_HOST: ${{ secrets.DB_HOST }}
@@ -22,3 +23,4 @@ jobs:
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
       SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+      DEPLOYER_APP_PRIVATE_KEY: ${{ secrets.DEPLOYER_APP_PRIVATE_KEY }}
